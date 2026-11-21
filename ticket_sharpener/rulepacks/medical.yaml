@@ -1,0 +1,48 @@
+# Medical rule pack: extra checks layered on top of the normal requirement checks.
+# Starter list for a hackathon demo. Have a domain person sanity-check before real use.
+# Each rule is used two ways:
+#   - Sharpener: if the ticket touches `triggers`, warn when the ticket does not address the rule.
+#   - Verifier (Person A): `check` is appended to the prompt; the model must answer with code evidence.
+sector: medical
+name: Medical / health software
+rules:
+  - id: MED-01
+    title: PHI never in logs
+    triggers: [patient, record, diagnosis, medication, phi, health, chart]
+    check: Does any new logging, print, or error message include patient identifiers or health data (name, DOB, MRN, diagnosis)?
+    severity: high
+  - id: MED-02
+    title: Audit trail for record access and changes
+    triggers: [patient, record, edit, update, delete, view, access]
+    check: Is every read, create, update, and delete of patient data written to an audit log with user id, timestamp, and action?
+    severity: high
+  - id: MED-03
+    title: Role-based access control
+    triggers: [patient, record, admin, clinician, nurse, doctor, access]
+    check: Is access to patient data gated by an explicit role or permission check before the data is returned?
+    severity: high
+  - id: MED-04
+    title: Encryption of patient data
+    triggers: [store, save, database, transmit, send, export, upload]
+    check: Is patient data encrypted at rest and in transit (TLS, encrypted column or volume), with no plaintext fallback?
+    severity: high
+  - id: MED-05
+    title: Dosage and unit safety
+    triggers: [dose, dosage, medication, drug, mg, ml, weight, unit]
+    check: Are dose values validated against explicit min/max limits, and are units stored and converted explicitly (no bare numbers)?
+    severity: high
+  - id: MED-06
+    title: Fail-safe on errors
+    triggers: [alert, alarm, monitor, vitals, critical, device]
+    check: When a dependency fails or data is missing, does the code fail visibly (alert, block) rather than silently continue or default to a normal value?
+    severity: high
+  - id: MED-07
+    title: Traceability to a test
+    triggers: [requirement, feature, change, fix]
+    check: Is there at least one automated test that maps to this requirement and would fail if the requirement broke?
+    severity: medium
+  - id: MED-08
+    title: Data retention and deletion
+    triggers: [delete, retention, archive, remove, purge]
+    check: Does deletion follow a defined retention rule (soft delete or archive with a reason) rather than an irreversible hard delete?
+    severity: medium

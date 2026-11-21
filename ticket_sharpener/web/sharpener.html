@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>deltazero: Ticket Sharpener</title>
+<style>
+  :root { --bg:#0f1115; --card:#181b22; --line:#2a2f3a; --text:#e8eaf0; --mute:#8b93a7; --good:#3ecf8e; --warn:#f5b942; --bad:#ef5b5b; --accent:#76b900; }
+  * { box-sizing: border-box; }
+  body { margin:0; background:var(--bg); color:var(--text); font:15px/1.5 system-ui,-apple-system,Segoe UI,sans-serif; }
+  main { max-width:920px; margin:0 auto; padding:28px 20px 60px; }
+  h1 { font-size:22px; margin:0 0 4px; } .sub { color:var(--mute); margin:0 0 20px; }
+  textarea { width:100%; min-height:130px; background:var(--card); color:var(--text); border:1px solid var(--line); border-radius:10px; padding:12px; font:inherit; resize:vertical; }
+  .row { display:flex; gap:10px; align-items:center; margin:12px 0 22px; flex-wrap:wrap; }
+  select, button { background:var(--card); color:var(--text); border:1px solid var(--line); border-radius:8px; padding:9px 14px; font:inherit; }
+  button.primary { background:var(--accent); color:#0b1200; border-color:var(--accent); font-weight:600; cursor:pointer; }
+  button:disabled { opacity:.5; cursor:wait; }
+  .card { background:var(--card); border:1px solid var(--line); border-radius:12px; padding:16px 18px; margin-bottom:14px; }
+  .card h2 { font-size:13px; text-transform:uppercase; letter-spacing:.06em; color:var(--mute); margin:0 0 10px; }
+  .score { display:flex; align-items:center; gap:18px; }
+  .num { font-size:56px; font-weight:700; line-height:1; } .grade { font-size:15px; color:var(--mute); }
+  .bars { flex:1; display:grid; gap:6px; }
+  .bar { display:grid; grid-template-columns:90px 1fr 36px; gap:8px; align-items:center; font-size:13px; color:var(--mute); }
+  .track { height:8px; background:var(--line); border-radius:4px; overflow:hidden; } .fill { height:100%; background:var(--accent); }
+  .issue { border-left:3px solid var(--warn); padding:6px 0 6px 12px; margin:10px 0; }
+  .issue.sector_gap { border-color:var(--bad); }
+  .tag { font-size:11px; background:var(--line); color:var(--mute); padding:1px 7px; border-radius:10px; margin-right:6px; }
+  q { color:var(--warn); } .fix { color:var(--good); font-size:14px; }
+  pre { white-space:pre-wrap; background:#0c0e12; border:1px solid var(--line); border-radius:8px; padding:12px; margin:0 0 10px; font:14px/1.5 ui-monospace,Menlo,monospace; }
+  .banner { border-radius:10px; padding:12px 14px; margin-bottom:14px; border:1px solid; }
+  .banner.exists { background:#3a1717; border-color:var(--bad); } .banner.partial,.banner.possible { background:#3a2f12; border-color:var(--warn); }
+  .banner.none { background:#12301f; border-color:var(--good); }
+  .mute { color:var(--mute); font-size:13px; } code { font-family:ui-monospace,Menlo,monospace; }
+</style>
+</head>
+<body>
+<main>
+  <h1>Ticket Sharpener</h1>
+  <p class="sub">Paste a ticket. Get a precision score, what is vague, whether the code already does it, and a rewrite.</p>
+
+  <textarea id="ticket" placeholder="Make the login page faster and more user-friendly..."></textarea>
+  <div class="row">
+    <select id="sector">
+      <option value="">General</option>
+      <option value="medical">Medical rule pack</option>
+      <option value="finance">Finance rule pack</option>
+    </select>
+    <button class="primary" id="go">Sharpen ticket</button>
+    <span class="mute" id="status"></span>
+  </div>
+  <div id="out"></div>
+</main>
+
+<script>
+const API = window.API_BASE || "";   // Person B: set window.API_BASE if the backend is on another origin/port
+const $ = id => document.getElementById(id);
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const scoreColor = n => n >= 80 ? "var(--good)" : n >= 50 ? "var(--warn)" : "var(--bad)";
+
+$("go").onclick = async () => {
+  const ticket = $("ticket").value.trim();
+  if (!ticket) return;
+  $("go").disabled = true; $("status").textContent = "Reading ticket and searching the codebase...";
+  try {
+    const r = await fetch(API + "/api/sharpen", { method:"POST", headers:{"Content-Type":"application/json"},
+      body: JSON.stringify({ ticket, sector: $("sector").value || null }) });
+    if (!r.ok) throw new Error("HTTP " + r.status);
+    render(await r.json());
+    $("status").textContent = "";
+  } catch (e) { $("status").textContent = "Error: " + e.message; }
+  $("go").disabled = false;
+};
+
+function render(d) {
+  const subs = d.sub_scores ? Object.entries(d.sub_scores).map(([k,v]) =>
+    `<div class="bar"><span>${esc(k)}</span><div class="track"><div class="fill" style="width:${v*4}%"></div></div><span>${v}/25</span></div>`).join("") : "";
+  const red = d.redundancy || {};
+  const redTitle = { exists:"Already implemented", partial:"Partly implemented", possible:"Similar code found", none:"No existing implementation found", unknown:"Redundancy check unavailable" }[red.status] || "";
+  const matches = (red.matches || []).map(m => `<div class="mute"><code>${esc(m.file)}:${m.start}-${m.end}</code> similarity ${m.score}</div>`).join("");
+  const issues = (d.issues || []).map(i => `
+    <div class="issue ${esc(i.type)}"><span class="tag">${esc(i.type)}</span><q>${esc(i.text)}</q>
+      <div>${esc(i.why)}</div><div class="fix">Fix: ${esc(i.fix)}</div></div>`).join("") || `<div class="mute">No problems found.</div>`;
+  const ac = (d.acceptance_criteria || []).map(a => `<li>${esc(a)}</li>`).join("");
+
+  $("out").innerHTML = `
+    ${d.note ? `<div class="banner possible">${esc(d.note)}</div>` : ""}
+    <div class="card"><h2>Precision score</h2><div class="score">
+      <div><div class="num" style="color:${scoreColor(d.score)}">${d.score}</div><div class="grade">${esc(d.grade)} / 100</div></div>
+      <div class="bars">${subs}</div></div></div>
+    ${red.status ? `<div class="banner ${esc(red.status)}"><b>${redTitle}</b>${red.explanation ? " — " + esc(red.explanation) : ""}${matches ? "<div style='margin-top:6px'>" + matches + "</div>" : ""}</div>` : ""}
+    <div class="card"><h2>Problems (${(d.issues||[]).length})</h2>${issues}
+      ${d.sector_rules_checked?.length ? `<div class="mute">Sector rules checked: ${d.sector_rules_checked.map(esc).join(", ")}</div>` : ""}</div>
+    ${d.rewrite ? `<div class="card"><h2>Sharpened ticket</h2><pre id="rw">${esc(d.rewrite)}</pre>
+      <button onclick="navigator.clipboard.writeText($('rw').textContent)">Copy</button>
+      ${ac ? `<h2 style="margin-top:14px">Acceptance criteria</h2><ul>${ac}</ul>` : ""}</div>` : ""}`;
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,45 @@
+# Finance rule pack: extra checks layered on top of the normal requirement checks.
+# Starter list for a hackathon demo. Have a domain person sanity-check before real use.
+sector: finance
+name: Finance / payments software
+rules:
+  - id: FIN-01
+    title: No floats for money
+    triggers: [amount, price, balance, payment, fee, interest, total, currency, money]
+    check: Is money stored and computed with Decimal or integer minor units (cents), never float?
+    severity: high
+  - id: FIN-02
+    title: Immutable audit trail
+    triggers: [transaction, transfer, payment, balance, adjust, refund, ledger]
+    check: Is every money-moving action recorded in an append-only audit log with user, timestamp, before/after values?
+    severity: high
+  - id: FIN-03
+    title: Idempotent payments
+    triggers: [payment, charge, transfer, retry, webhook, refund]
+    check: Does a retried or duplicated request avoid double-charging (idempotency key or unique constraint)?
+    severity: high
+  - id: FIN-04
+    title: Card data handling (PCI)
+    triggers: [card, pan, cvv, cvc, expiry, payment method]
+    check: Are card numbers and CVV never stored or logged in plaintext, and are they masked in any display?
+    severity: high
+  - id: FIN-05
+    title: Authorization and limits
+    triggers: [transfer, withdraw, approve, limit, payment, payout]
+    check: Is there an explicit authorization check and a limit or approval rule before funds move?
+    severity: high
+  - id: FIN-06
+    title: KYC / AML hooks
+    triggers: [onboard, account, signup, verify, identity, transfer, large]
+    check: Are identity verification and suspicious-activity checks run before the account or transaction is allowed?
+    severity: medium
+  - id: FIN-07
+    title: Explicit rounding rules
+    triggers: [round, interest, fee, tax, split, percent, rate]
+    check: Is the rounding mode and precision stated in code and covered by a test with an edge-case amount?
+    severity: medium
+  - id: FIN-08
+    title: Separation of duties
+    triggers: [approve, release, review, deploy, adjust, override]
+    check: Can the same user both create and approve the same change or transaction? It should be blocked.
+    severity: medium
