@@ -126,7 +126,7 @@ export default function Assistant() {
           data-tour="ask"
           onClick={() => setOpen(true)}
           aria-label="Open Ask Delta assistant"
-          className="fixed bottom-4 right-4 z-40 flex items-center gap-2 rounded-full border border-cyan-300/40 bg-navy-900/90 px-4 py-3 text-sm font-medium text-cyan-100 shadow-[0_0_28px_-6px_rgba(103,232,249,0.6)] backdrop-blur transition hover:bg-navy-800 sm:bottom-6 sm:right-6"
+          className="fixed bottom-4 right-4 z-40 flex items-center gap-2 rounded-full border border-cyan-300/40 bg-navy-900/90 px-4 py-3 text-sm font-medium text-cyan-100 backdrop-blur transition hover:bg-navy-800 sm:bottom-6 sm:right-6"
         >
           <span className="text-base font-bold text-cyan-300">Δ</span> Ask Δ
         </button>
@@ -138,7 +138,7 @@ export default function Assistant() {
           data-tour="ask-panel"
           role="dialog"
           aria-label="Ask Delta assistant"
-          className="fixed inset-x-0 bottom-0 z-40 flex h-[85vh] flex-col border-t border-cyan-300/20 bg-navy-950/95 shadow-[0_0_40px_-10px_rgba(103,232,249,0.45)] backdrop-blur-md sm:inset-x-auto sm:bottom-6 sm:right-6 sm:h-[560px] sm:w-[400px] sm:rounded-2xl sm:border"
+          className="fixed inset-x-0 bottom-0 z-40 flex h-[85vh] flex-col border-t border-cyan-300/20 bg-navy-950/95 backdrop-blur-md sm:inset-x-auto sm:bottom-6 sm:right-6 sm:h-[560px] sm:w-[400px] sm:rounded-2xl sm:border"
         >
           <div className="flex items-center justify-between border-b border-navy-700/70 px-4 py-3">
             <div>

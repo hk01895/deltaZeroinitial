@@ -11,7 +11,7 @@ export default function AppShell({ children, mock }: { children: React.ReactNode
       <header className="sticky top-0 z-20 border-b border-navy-700/40 bg-navy-950/70 backdrop-blur-md">
         <div className="mx-auto flex max-w-6xl items-center justify-between gap-3 px-4 py-3 sm:px-6">
           <Link href="/" className="group flex min-w-0 items-center gap-2.5">
-            <span className="flex h-8 w-8 items-center justify-center rounded-lg border border-cyan-300/40 bg-cyan-400/10 text-sm font-bold text-cyan-200 shadow-[0_0_18px_-6px_rgba(103,232,249,0.7)] transition group-hover:shadow-[0_0_22px_-4px_rgba(103,232,249,0.8)]">
+            <span className="flex h-8 w-8 items-center justify-center rounded-lg border border-cyan-300/40 bg-cyan-400/10 text-sm font-bold text-cyan-200 transition group-">
               Δ0
             </span>
             <span className="hidden text-base font-semibold tracking-tight text-slate-100 min-[380px]:inline">DeltaZero</span>

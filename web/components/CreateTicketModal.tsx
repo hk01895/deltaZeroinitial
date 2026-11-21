@@ -61,7 +61,7 @@ export default function CreateTicketModal({
         aria-label={`Create a ticket for ${row.req_id}`}
         onSubmit={submit}
         onClick={(e) => e.stopPropagation()}
-        className="max-h-[90vh] w-full overflow-y-auto rounded-t-2xl border border-cyan-300/25 bg-navy-900 p-5 shadow-[0_0_48px_-12px_rgba(103,232,249,0.55)] sm:max-w-lg sm:rounded-2xl"
+        className="max-h-[90vh] w-full overflow-y-auto rounded-t-2xl border border-cyan-300/25 bg-navy-900 p-5 sm:max-w-lg sm:rounded-2xl"
       >
         <div className="flex items-start justify-between gap-3">
           <div>

@@ -96,7 +96,6 @@ export default function EvalPage() {
                                 ? `rgba(52, 211, 153, ${0.06 + alpha * 0.32})`
                                 : `rgba(251, 113, 133, ${n ? 0.08 + alpha * 0.3 : 0.02})`,
                               borderColor: diag ? `rgba(52, 211, 153, ${0.15 + alpha * 0.35})` : `rgba(251, 113, 133, ${n ? 0.25 : 0.06})`,
-                              boxShadow: diag && alpha > 0.6 ? "0 0 18px -6px rgba(52,211,153,0.55)" : undefined,
                             }}
                           >
                             {n}
@@ -122,7 +121,7 @@ export default function EvalPage() {
             {[
               { label: "Lightning · thinking off", ms: latency.fast_avg_ms, cls: "bg-cyan-300/80" },
               { label: "Super · thinking on", ms: latency.deep_avg_ms, cls: "bg-violet-400/80" },
-              { label: "DeltaZero router (blended)", ms: latency.routed_avg_ms, cls: "bg-cyan-300 shadow-[0_0_14px_-2px_rgba(103,232,249,0.6)]" },
+              { label: "DeltaZero router (blended)", ms: latency.routed_avg_ms, cls: "bg-cyan-300" },
               { label: "Baseline: all Super + thinking", ms: latency.all_deep_avg_ms, cls: "bg-slate-500/70" },
             ].map((b) => (
               <div key={b.label}>

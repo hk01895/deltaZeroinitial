@@ -17,7 +17,7 @@ export default function StatCard({
     amber: "text-amber-200",
     rose: "text-rose-300",
     orange: "text-orange-300",
-    cyan: "text-cyan-200 [text-shadow:0_0_18px_rgba(103,232,249,0.35)]",
+    cyan: "text-cyan-200",
   };
   return (
     <div className={`${card} p-4`}>

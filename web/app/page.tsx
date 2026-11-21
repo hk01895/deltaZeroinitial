@@ -174,7 +174,7 @@ export default function Overview() {
           {zero ? (
             <span
               key={`msg-${burst}`}
-              className="dz-pop inline-flex items-center gap-2 rounded-full border border-emerald-300/30 bg-emerald-400/10 px-4 py-1.5 font-medium text-emerald-200 shadow-[0_0_24px_-8px_rgba(52,211,153,0.7)]"
+              className="dz-pop inline-flex items-center gap-2 rounded-full border border-emerald-300/30 bg-emerald-400/10 px-4 py-1.5 font-medium text-emerald-200"
             >
               <Icon name="sparkles" className="h-4 w-4" /> Zero delta. Everything you promised, shipped.
             </span>
@@ -360,7 +360,7 @@ export default function Overview() {
       )}
       {toast && (
         <div className="fixed inset-x-0 bottom-20 z-50 flex justify-center px-4">
-          <div role="status" className="dz-pop rounded-full border border-emerald-300/30 bg-navy-900/95 px-4 py-2 text-sm text-emerald-100 shadow-[0_0_24px_-8px_rgba(52,211,153,0.7)]">
+          <div role="status" className="dz-pop rounded-full border border-emerald-300/30 bg-navy-900/95 px-4 py-2 text-sm text-emerald-100">
             <span className="inline-flex items-center gap-2"><Icon name="check" className="h-4 w-4" /> {toast}</span>
           </div>
         </div>

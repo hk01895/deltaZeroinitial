@@ -109,8 +109,8 @@ export default function PRReviewPage() {
                 <p
                   className={`mt-1 font-display text-5xl font-semibold tabular-nums sm:text-6xl ${
                     done
-                      ? "text-emerald-200 [text-shadow:0_0_26px_rgba(52,211,153,0.45)]"
-                      : "text-cyan-100 [text-shadow:0_0_22px_rgba(103,232,249,0.35)]"
+                      ? "text-emerald-200"
+                      : "text-cyan-100"
                   }`}
                 >
                   {met}

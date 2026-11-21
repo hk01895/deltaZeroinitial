@@ -86,7 +86,7 @@ function SharpenerInner() {
           <div className="space-y-4">
             <div className={`${card} p-5 text-center`}>
               <p className={eyebrow}>Precision</p>
-              <p className="mt-1 font-display text-6xl font-semibold tabular-nums text-cyan-50 [text-shadow:0_0_22px_rgba(103,232,249,0.35)]">{res.score}</p>
+              <p className="mt-1 font-display text-6xl font-semibold tabular-nums text-cyan-50">{res.score}</p>
               <span className={`mt-2 inline-block rounded-full border px-3 py-0.5 text-sm font-medium ${GRADE[res.grade] ?? GRADE["needs work"]}`}>{res.grade}</span>
               {res.fallback && <p className="mt-3 text-xs text-amber-200">{res.note ?? "AI unavailable: rule-based checks only."}</p>}
             </div>
