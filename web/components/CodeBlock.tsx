@@ -1,3 +1,4 @@
+import Icon from "./Icon";
 import type { Evidence } from "@/lib/types";
 
 export function EvidenceBlock({ ev, verified }: { ev: Evidence; verified: boolean }) {
@@ -9,9 +10,9 @@ export function EvidenceBlock({ ev, verified }: { ev: Evidence; verified: boolea
           {ev.file}:{ev.start_line}–{ev.end_line}
         </span>
         {verified ? (
-          <span className="font-sans font-medium text-emerald-300">✓ found in diff</span>
+          <span className="inline-flex items-center gap-1 font-sans font-medium text-emerald-300"><Icon name="check" className="h-3.5 w-3.5" /> found in diff</span>
         ) : (
-          <span className="font-sans font-medium text-rose-300">✕ not found in diff</span>
+          <span className="inline-flex items-center gap-1 font-sans font-medium text-rose-300"><Icon name="x" className="h-3.5 w-3.5" /> not found in diff</span>
         )}
       </div>
       <pre className="overflow-x-auto bg-navy-950 p-3 font-mono text-xs leading-5 text-slate-200">

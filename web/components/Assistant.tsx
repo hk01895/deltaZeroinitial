@@ -1,5 +1,6 @@
 "use client";
 
+import Icon from "@/components/Icon";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { ask, logChange, type AssistantReply } from "@/lib/assistant";
@@ -108,7 +109,7 @@ export default function Assistant() {
         id: nextId++,
         reply:
           how === "kept_spec"
-            ? "Kept the spec. ✓ Nothing changed."
+            ? "Kept the spec. Nothing changed."
             : `Override recorded. I applied the change and saved your reason:\n"${why}"\nReviewers will see it, and I'll take it into account next time.`,
       },
     ]);
@@ -182,7 +183,7 @@ export default function Assistant() {
 
                   {m.pushback && (
                     <div className="rounded-xl border border-amber-300/30 bg-amber-300/[0.06] p-3 text-sm" data-tour="pushback">
-                      <p className="font-semibold text-amber-200">⚠ Pushback</p>
+                      <p className="inline-flex items-center gap-1.5 font-semibold text-amber-200"><Icon name="alert" className="h-4 w-4" /> Pushback</p>
                       <p className="mt-1 leading-6 text-slate-200">
                         <Rich text={m.pushback.rule} />
                       </p>
@@ -239,7 +240,7 @@ export default function Assistant() {
 
                       {m.resolved && (
                         <p className="mt-2 text-xs font-medium text-slate-400">
-                          {m.resolved === "kept_spec" ? "✓ You kept the spec" : "↯ You overrode this (reason saved)"}
+                          {m.resolved === "kept_spec" ? "You kept the spec" : "You overrode this (reason saved)"}
                         </p>
                       )}
                     </div>

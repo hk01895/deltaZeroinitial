@@ -1,6 +1,7 @@
 import Link from "next/link";
 import type { CoverageRow, CoverageStatus } from "@/lib/types";
 import StatusBadge, { GROUP, GROUP_OF, TONE } from "./StatusBadge";
+import Icon, { type IconName } from "./Icon";
 
 // Requirement map, grouped so problems come first.
 // Accessibility: status is always spelled out in text (never color alone),
@@ -41,11 +42,11 @@ function traceSteps(r: CoverageRow): Step[] {
   return [{ label: "Spec", state: "ok", spoken: "in the spec" }, ticket, pr];
 }
 
-const STEP_STYLE: Record<StepState, { icon: string; cls: string }> = {
-  ok: { icon: "✓", cls: "border-emerald-400/30 bg-emerald-400/10 text-emerald-200" },
-  bad: { icon: "✕", cls: "border-rose-400/40 bg-rose-400/10 text-rose-200" },
-  partial: { icon: "◐", cls: "border-amber-300/40 bg-amber-300/10 text-amber-100" },
-  pending: { icon: "…", cls: "border-amber-300/30 bg-amber-300/[0.06] text-amber-100" },
+const STEP_STYLE: Record<StepState, { icon: IconName; cls: string }> = {
+  ok: { icon: "check", cls: "border-emerald-400/30 bg-emerald-400/10 text-emerald-200" },
+  bad: { icon: "x", cls: "border-rose-400/40 bg-rose-400/10 text-rose-200" },
+  partial: { icon: "clock", cls: "border-amber-300/40 bg-amber-300/10 text-amber-100" },
+  pending: { icon: "dot", cls: "border-amber-300/30 bg-amber-300/[0.06] text-amber-100" },
 };
 
 function Trace({ r }: { r: CoverageRow }) {
@@ -56,7 +57,7 @@ function Trace({ r }: { r: CoverageRow }) {
         <li key={i} className="flex items-center gap-1.5" aria-hidden>
           {i > 0 && <span className="text-slate-500">→</span>}
           <span className={`inline-flex items-center gap-1 rounded-md border px-1.5 py-0.5 font-medium ${STEP_STYLE[s.state].cls}`}>
-            <span>{STEP_STYLE[s.state].icon}</span>
+            <Icon name={STEP_STYLE[s.state].icon} className="h-3 w-3" strokeWidth={2.5} />
             <span className="font-mono">{s.label}</span>
           </span>
         </li>
@@ -91,7 +92,7 @@ function Tile({ r, onCreateTicket }: { r: CoverageRow; onCreateTicket?: (r: Cove
             className={`rounded-md border border-cyan-300/40 bg-cyan-400/10 px-2.5 py-1 text-xs font-medium text-cyan-100 hover:bg-cyan-400/20 ${focusRing}`}
             aria-label={`Create a ticket for ${r.req_id}`}
           >
-            + Create ticket
+            <span className="inline-flex items-center gap-1"><Icon name="plus" className="h-3.5 w-3.5" /> Create ticket</span>
           </button>
         )}
       </div>
@@ -109,12 +110,14 @@ function Tile({ r, onCreateTicket }: { r: CoverageRow; onCreateTicket?: (r: Cove
 
 function Section({
   title,
+  icon,
   hint,
   count,
   tone,
   children,
 }: {
   title: string;
+  icon: IconName;
   hint: string;
   count: number;
   tone: string;
@@ -125,7 +128,10 @@ function Section({
     <section aria-labelledby={id} className="space-y-3">
       <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
         <h3 id={id} className={`text-base font-semibold ${tone}`}>
-          {title} <span className="tabular-nums">({count})</span>
+          <span className="inline-flex items-center gap-2">
+            <Icon name={icon} className="h-4 w-4" strokeWidth={2.5} />
+            {title} <span className="tabular-nums">({count})</span>
+          </span>
         </h3>
         <p className="text-sm text-slate-300">{hint}</p>
       </div>
@@ -144,7 +150,7 @@ export default function RequirementMap({ rows, onCreateTicket }: { rows: Coverag
   return (
     <div className="space-y-8">
       {attention.length > 0 && (
-        <Section title="✕ Lost" hint="In the spec, but nobody made a ticket. Create one to get it moving." count={attention.length} tone="text-rose-200">
+        <Section title="Lost" icon="x" hint="In the spec, but nobody made a ticket. Create one to get it moving." count={attention.length} tone="text-rose-200">
           <div className="grid grid-cols-1 gap-3 md:grid-cols-2 lg:grid-cols-3">
             {attention.map((r) => (
               <Tile key={r.req_id} r={r} onCreateTicket={onCreateTicket} />
@@ -154,7 +160,7 @@ export default function RequirementMap({ rows, onCreateTicket }: { rows: Coverag
       )}
 
       {notStarted.length > 0 && (
-        <Section title="◐ In progress" hint="Has a ticket, not finished yet. The Why line says what's left." count={notStarted.length} tone="text-amber-200">
+        <Section title="In progress" icon="clock" hint="Has a ticket, not finished yet. The Why line says what's left." count={notStarted.length} tone="text-amber-200">
           <div className="grid grid-cols-1 gap-3 md:grid-cols-2 lg:grid-cols-3">
             {notStarted.map((r) => (
               <Tile key={r.req_id} r={r} onCreateTicket={onCreateTicket} />
@@ -164,13 +170,13 @@ export default function RequirementMap({ rows, onCreateTicket }: { rows: Coverag
       )}
 
       {done.length > 0 && (
-        <Section title="✓ Done" hint="Verified in code." count={done.length} tone="text-emerald-200">
+        <Section title="Done" icon="check" hint="Verified in code." count={done.length} tone="text-emerald-200">
           <ul className="divide-y divide-navy-700/70 overflow-hidden rounded-xl border border-navy-700/70 bg-navy-900/50">
             {done.map((r) => {
               const href = hrefFor(r);
               const body = (
                 <>
-                  <span aria-hidden className="mt-0.5 text-emerald-300">✓</span>
+                  <Icon name="check" className="mt-1 h-4 w-4 text-emerald-300" />
                   <span className="w-16 shrink-0 font-mono text-xs font-semibold leading-6 text-slate-300">{r.req_id}</span>
                   <span className="min-w-0 flex-1 text-sm leading-6 text-slate-200">{r.text}</span>
                   <span className="shrink-0 font-mono text-xs leading-6 text-slate-300">

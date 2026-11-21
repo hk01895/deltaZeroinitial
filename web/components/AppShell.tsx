@@ -1,3 +1,4 @@
+import Icon from "./Icon";
 import Link from "next/link";
 import SectorSelect from "./SectorSelect";
 import Assistant from "./Assistant";
@@ -26,7 +27,9 @@ export default function AppShell({ children, mock }: { children: React.ReactNode
               href="/project/new"
               className="whitespace-nowrap rounded-md border border-cyan-300/40 bg-cyan-400/10 px-2.5 py-1.5 text-xs font-medium text-cyan-100 transition hover:bg-cyan-400/20 sm:text-sm"
             >
-              + Load project
+              <span className="inline-flex items-center gap-1.5">
+                <Icon name="plus" className="h-4 w-4" /> Load project
+              </span>
             </Link>
             <SectorSelect />
           </div>

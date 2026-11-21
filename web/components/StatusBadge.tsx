@@ -1,4 +1,5 @@
 import type { CoverageStatus, Verdict } from "@/lib/types";
+import Icon, { type IconName } from "./Icon";
 
 // Kept deliberately small: THREE statuses per view, THREE colors total.
 //
@@ -14,24 +15,24 @@ export type Tone = "good" | "wait" | "bad";
 
 export interface Look {
   label: string;
-  icon: string;
+  icon: IconName;
   hint: string;
   tone: Tone;
 }
 
 const COVERAGE: Record<CoverageStatus, Look> = {
-  met: { label: "Done", icon: "✓", hint: "Verified in code", tone: "good" },
-  partial: { label: "In progress", icon: "◐", hint: "Has a ticket, not finished yet", tone: "wait" },
-  missing: { label: "In progress", icon: "◐", hint: "Has a ticket, not finished yet", tone: "wait" },
-  not_started: { label: "In progress", icon: "◐", hint: "Has a ticket, not finished yet", tone: "wait" },
-  never_ticketed: { label: "Lost", icon: "✕", hint: "In the spec, but no ticket was ever made", tone: "bad" },
+  met: { label: "Done", icon: "check", hint: "Verified in code", tone: "good" },
+  partial: { label: "In progress", icon: "clock", hint: "Has a ticket, not finished yet", tone: "wait" },
+  missing: { label: "In progress", icon: "clock", hint: "Has a ticket, not finished yet", tone: "wait" },
+  not_started: { label: "In progress", icon: "clock", hint: "Has a ticket, not finished yet", tone: "wait" },
+  never_ticketed: { label: "Lost", icon: "x", hint: "In the spec, but no ticket was ever made", tone: "bad" },
 };
 
 const VERDICT: Record<Verdict, Look> = {
-  met: { label: "Met", icon: "✓", hint: "The code does what was promised", tone: "good" },
-  partial: { label: "Not met", icon: "✕", hint: "The code doesn't fully do this yet", tone: "bad" },
-  missing: { label: "Not met", icon: "✕", hint: "The code doesn't fully do this yet", tone: "bad" },
-  needs_human: { label: "Check needed", icon: "?", hint: "The AI isn't sure, so a person should look", tone: "wait" },
+  met: { label: "Met", icon: "check", hint: "The code does what was promised", tone: "good" },
+  partial: { label: "Not met", icon: "x", hint: "The code doesn't fully do this yet", tone: "bad" },
+  missing: { label: "Not met", icon: "x", hint: "The code doesn't fully do this yet", tone: "bad" },
+  needs_human: { label: "Check needed", icon: "help", hint: "The AI isn't sure, so a person should look", tone: "wait" },
 };
 
 export function look(status: Status, kind: Kind): Look {
@@ -85,9 +86,7 @@ export default function StatusBadge({ status, kind = "verdict" }: { status: Stat
       className={`inline-flex items-center gap-1.5 whitespace-nowrap rounded-full px-2.5 py-0.5 text-xs font-semibold ring-1 ring-inset ${TONE[l.tone].badge}`}
       title={l.hint}
     >
-      <span aria-hidden className="font-bold">
-        {l.icon}
-      </span>
+      <Icon name={l.icon} className="h-3.5 w-3.5" strokeWidth={2.5} />
       {l.label}
     </span>
   );

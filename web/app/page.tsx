@@ -1,5 +1,6 @@
 "use client";
 
+import Icon from "@/components/Icon";
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { finishDemoSprint, getCoverage, getCurrentProject, getEval, getPRs, USING_MOCK } from "@/lib/api";
@@ -112,7 +113,7 @@ export default function Overview() {
   if (cov.requirements.length === 0)
     return (
       <div className="mx-auto max-w-xl py-16 text-center">
-        <p className="text-6xl font-semibold text-cyan-300/70">Δ</p>
+        <p className="font-display text-6xl font-semibold text-cyan-300/70">Δ</p>
         <h1 className="mt-4 text-2xl font-semibold tracking-tight text-slate-50">No project loaded yet</h1>
         <p className="mt-2 text-sm leading-6 text-slate-300">
           Point DeltaZero at a GitHub repo and its spec. It finds every promise, matches it to an issue, and checks the pull requests.
@@ -175,7 +176,7 @@ export default function Overview() {
               key={`msg-${burst}`}
               className="dz-pop inline-flex items-center gap-2 rounded-full border border-emerald-300/30 bg-emerald-400/10 px-4 py-1.5 font-medium text-emerald-200 shadow-[0_0_24px_-8px_rgba(52,211,153,0.7)]"
             >
-              ✦ Zero delta. Everything you promised, shipped.
+              <Icon name="sparkles" className="h-4 w-4" /> Zero delta. Everything you promised, shipped.
             </span>
           ) : (
             <>
@@ -215,10 +216,10 @@ export default function Overview() {
         <div data-tour="lost" className={`${card} relative overflow-hidden p-5 ${lost.length ? "border-rose-400/30" : ""}`}>
           {lost.length > 0 && <div className="pointer-events-none absolute -right-10 -top-10 h-32 w-32 rounded-full bg-rose-400/10 blur-2xl" />}
           <p className={eyebrow}>Lost requirements</p>
-          <p className={`mt-1 text-4xl font-semibold tabular-nums ${lost.length ? "text-rose-200" : "text-emerald-300"}`}>
+          <p className={`mt-1 font-display text-4xl font-semibold tabular-nums ${lost.length ? "text-rose-200" : "text-emerald-300"}`}>
             {lost.length}
           </p>
-          <p className="text-xs text-slate-300">{lost.length ? "in the spec, but nobody made a ticket for them" : "every requirement has a ticket ✓"}</p>
+          <p className="text-xs text-slate-300">{lost.length ? "in the spec, but nobody made a ticket for them" : "every requirement has a ticket"}</p>
           <ul className="mt-4 space-y-2">
             {lost.map((r) => (
               <li key={r.req_id} className="flex items-center justify-between gap-3 rounded-lg border border-rose-400/20 bg-navy-950/50 p-2.5">
@@ -231,7 +232,7 @@ export default function Overview() {
                   onClick={() => setCreating(r)}
                   className="shrink-0 rounded-md border border-cyan-300/40 bg-cyan-400/10 px-2.5 py-1 text-xs font-medium text-cyan-100 hover:bg-cyan-400/20"
                 >
-                  + Create ticket
+                  <span className="inline-flex items-center gap-1"><Icon name="plus" className="h-3.5 w-3.5" /> Create ticket</span>
                 </button>
               </li>
             ))}
@@ -307,7 +308,7 @@ export default function Overview() {
 
       {drifted.length > 0 && (
         <section className="flex flex-wrap items-center gap-x-4 gap-y-1 rounded-xl border border-amber-300/20 bg-amber-300/[0.05] px-4 py-3 text-sm">
-          <span className="font-semibold text-amber-200">↯ Drift</span>
+          <span className="inline-flex items-center gap-1.5 font-semibold text-amber-200"><Icon name="drift" className="h-4 w-4" /> Drift</span>
           {drifted.map((r) => (
             <span key={r.req_id} className="text-amber-100/90">
               <span className="font-mono text-amber-300/80">{r.req_id}</span> {r.drift}
@@ -341,7 +342,7 @@ export default function Overview() {
       {toast && (
         <div className="fixed inset-x-0 bottom-20 z-50 flex justify-center px-4">
           <div role="status" className="dz-pop rounded-full border border-emerald-300/30 bg-navy-900/95 px-4 py-2 text-sm text-emerald-100 shadow-[0_0_24px_-8px_rgba(52,211,153,0.7)]">
-            ✓ {toast}
+            <span className="inline-flex items-center gap-2"><Icon name="check" className="h-4 w-4" /> {toast}</span>
           </div>
         </div>
       )}

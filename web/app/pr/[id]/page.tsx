@@ -1,5 +1,6 @@
 "use client";
 
+import Icon from "@/components/Icon";
 import { useParams } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 import { getPRReview, rerunPR } from "@/lib/api";
@@ -94,7 +95,7 @@ export default function PRReviewPage() {
           </div>
         </div>
         <button data-tour="rerun" onClick={rerun} disabled={running} className={btnPrimary}>
-          {running ? "Re-checking latest commit…" : "↻ Re-run check"}
+          {running ? "Re-checking latest commit…" : <span className="inline-flex items-center gap-2"><Icon name="refresh" className="h-4 w-4" /> Re-run check</span>}
         </button>
       </div>
 
@@ -106,7 +107,7 @@ export default function PRReviewPage() {
               <div>
                 <p className={eyebrow}>Requirements met</p>
                 <p
-                  className={`mt-1 text-5xl font-semibold tabular-nums sm:text-6xl ${
+                  className={`mt-1 font-display text-5xl font-semibold tabular-nums sm:text-6xl ${
                     done
                       ? "text-emerald-200 [text-shadow:0_0_26px_rgba(52,211,153,0.45)]"
                       : "text-cyan-100 [text-shadow:0_0_22px_rgba(103,232,249,0.35)]"
@@ -133,7 +134,7 @@ export default function PRReviewPage() {
             </div>
             {done && (
               <p className="mt-3 text-sm font-medium text-emerald-300">
-                ✓ Every requirement on {review.ticket_key} is met. Ready to merge.
+                <span className="inline-flex items-center gap-2"><Icon name="check" className="h-4 w-4" /> Every requirement on {review.ticket_key} is met. Ready to merge.</span>
               </p>
             )}
           </div>

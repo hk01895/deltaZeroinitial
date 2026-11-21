@@ -101,9 +101,9 @@ function ruleFor(sector: Sector, msg: string): string | null {
 }
 
 function trace(r: CoverageRow) {
-  const t = r.ticket_key ? `✓ ${r.ticket_key}` : "✕ no ticket";
-  const p = r.pr_id ? `${r.status === "met" ? "✓" : r.status === "partial" ? "◐" : "✕"} PR #${r.pr_id}` : "… no PR";
-  return `✓ Spec → ${t} → ${p}`;
+  const t = r.ticket_key ? r.ticket_key : "no ticket";
+  const p = r.pr_id ? `PR #${r.pr_id} (${r.status === "met" ? "done" : r.status === "partial" ? "partly done" : "not done"})` : "no PR yet";
+  return `Spec → ${t} → ${p}`;
 }
 
 function draftTicket(r: CoverageRow) {
@@ -139,7 +139,7 @@ async function mockBrain(raw: string, sector: Sector): Promise<AssistantReply> {
 
   // Ready to ship?
   if (/\b(ready|ship|release|launch)\b|\bdone\?/.test(m) && !/\b(change|make|set)\b/.test(m)) {
-    if (delta === 0) return { reply: "**Yes.** Δ is 0: every requirement in the spec is verified in code. 🎉" };
+    if (delta === 0) return { reply: "**Yes.** Δ is 0: every requirement in the spec is verified in code." };
     return {
       reply:
         `**Not yet.** Δ is **${delta}**. Blockers:\n` +

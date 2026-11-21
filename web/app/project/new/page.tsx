@@ -1,5 +1,6 @@
 "use client";
 
+import Icon from "@/components/Icon";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { getCurrentProject, loadProject } from "@/lib/api";
@@ -160,7 +161,7 @@ export default function NewProjectPage() {
                     }
                     aria-hidden
                   >
-                    {done ? "✓" : i + 1}
+                    {done ? <Icon name="check" className="h-3 w-3" /> : i + 1}
                   </span>
                   <div>
                     <p className={`text-sm font-medium ${done || active ? "text-slate-100" : "text-slate-400"}`}>

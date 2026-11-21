@@ -22,7 +22,7 @@ export default function StatCard({
   return (
     <div className={`${card} p-4`}>
       <p className={eyebrow}>{label}</p>
-      <p className={`mt-1 text-3xl font-semibold tabular-nums ${toneCls[tone]}`}>{value}</p>
+      <p className={`mt-1 font-display text-3xl font-semibold tabular-nums ${toneCls[tone]}`}>{value}</p>
       {sub && <p className="mt-1 text-xs text-slate-400">{sub}</p>}
     </div>
   );

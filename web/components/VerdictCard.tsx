@@ -1,5 +1,6 @@
 "use client";
 
+import Icon from "@/components/Icon";
 import { useEffect, useState } from "react";
 import { regenerateFix } from "@/lib/api";
 import type { Override, RequirementVerdict } from "@/lib/types";
@@ -123,7 +124,7 @@ export default function VerdictCard({
           </summary>
           <div className="space-y-3 border-t border-navy-700 p-3">
             {fix.note && (
-              <p className="rounded-lg border border-cyan-300/25 bg-cyan-400/[0.06] px-3 py-2 text-sm text-cyan-50">↻ {fix.note}</p>
+              <p className="rounded-lg border border-cyan-300/25 bg-cyan-400/[0.06] px-3 py-2 text-sm text-cyan-50"><Icon name="refresh" className="mr-1.5 h-4 w-4 align-[-3px]" />{fix.note}</p>
             )}
             {fix.diff && (
               <div>
@@ -146,7 +147,7 @@ export default function VerdictCard({
                 onClick={() => setAsking(true)}
                 className="text-sm font-medium text-cyan-200 hover:underline"
               >
-                ↻ Not the fix you want? Tell the AI your requirements
+                <span className="inline-flex items-center gap-1.5"><Icon name="refresh" /> Not the fix you want? Tell the AI your requirements</span>
               </button>
             ) : (
               <form onSubmit={redo} className="space-y-2 rounded-lg border border-cyan-300/25 bg-cyan-400/[0.04] p-3">
