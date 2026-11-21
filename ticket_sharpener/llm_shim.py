@@ -12,6 +12,7 @@ Uses only the standard library, so there is nothing to pip install.
 import json
 import os
 import time
+import urllib.error
 import urllib.request
 
 BASE = os.getenv("NVIDIA_BASE_URL", "https://integrate.api.nvidia.com/v1")
@@ -32,8 +33,11 @@ def _post(path: str, payload: dict, timeout: int = 90) -> dict:
         data=json.dumps(payload).encode(),
         headers={"Authorization": f"Bearer {key}", "Content-Type": "application/json"},
     )
-    with urllib.request.urlopen(req, timeout=timeout) as r:
-        return json.loads(r.read())
+    try:
+        with urllib.request.urlopen(req, timeout=timeout) as r:
+            return json.loads(r.read())
+    except urllib.error.HTTPError as e:  # show NVIDIA's own message instead of a bare "HTTP Error 410"
+        raise RuntimeError(f"HTTP {e.code} from {path} (model={payload.get('model')}): {e.read().decode()[:500]}") from None
 
 
 def chat(messages, model=None, thinking=False, max_tokens=1500, temperature=0.2) -> str:
@@ -67,3 +71,10 @@ def embed(texts, kind="passage", batch=32):
         })
         vecs.extend(d["embedding"] for d in sorted(out["data"], key=lambda d: d["index"]))
     return vecs
+
+
+def list_models(contains="nemotron"):
+    """Model ids your key can call right now (GET /models). Handy when a model id returns 404/410."""
+    req = urllib.request.Request(BASE + "/models", headers={"Authorization": f"Bearer {os.getenv('NVIDIA_API_KEY')}"})
+    with urllib.request.urlopen(req, timeout=30) as r:
+        return sorted(m["id"] for m in json.loads(r.read())["data"] if contains in m["id"].lower())
