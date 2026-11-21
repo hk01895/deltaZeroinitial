@@ -22,7 +22,7 @@ python3 eval/build_cases.py --n 10 --lang python
 #   → eval/cases.jsonl  (30 cases)   eval/sources.json  (the 10 real PRs, with links)
 
 # 2. Score the verifier through the backend (Shreya's API must be running)
-python3 eval/run_eval.py --api http://localhost:8000
+python3 eval/run_eval.py --api http://localhost:8000/ui
 #   → eval/results/eval.json   (exact shape the dashboard's Eval page reads via GET /eval)
 #   → eval/results/details.csv (every case: actual vs predicted, for reviewing misses)
 
@@ -31,7 +31,7 @@ python3 eval/run_eval.py --baseline
 ```
 
 The backend needs one endpoint for this (Shreenidhi's verifier):
-`POST /verify` `{ "requirements": [{ "req_id": "REQ-1", "text": "..." }], "diff": "...", "sector": "general" }` → `RequirementVerdict[]`.
+`POST /ui/verify` `{ "requirements": [{ "req_id": "REQ-1", "text": "..." }], "diff": "...", "sector": "general" }` → `RequirementVerdict[]`.
 
 ## Notes for the pitch
 - "Met" labels assume a merged PR that closes an issue really did what the issue asked. Spot-check

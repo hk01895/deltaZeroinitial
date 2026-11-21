@@ -1,7 +1,7 @@
 # DeltaZero API contract
 
 Agree on this at the 11:45 sync. The frontend (`web/lib/types.ts`) uses these exact field names.
-Backend: FastAPI on `http://localhost:8000`. Enable CORS for `http://localhost:3000`.
+Backend: FastAPI on `http://localhost:8000`. **The dashboard paths below live under `/ui`** (`backend/ui_api.py`), e.g. `GET /ui/coverage`. CORS: `FRONTEND_ORIGINS=http://localhost:3000`.
 
 | Method | Path | Returns | Owner |
 |---|---|---|---|

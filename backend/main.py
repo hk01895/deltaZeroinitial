@@ -258,8 +258,9 @@ def run_verification(owner, repo, number):
             raise ValueError("Evidence must be a list")
 
         # Evidence Guard: verify that claimed evidence
-        # exists in the fetched diff.
-        if v["verdict"] != "human":
+        # exists in the fetched diff. ("none" = not implemented,
+        # so there is nothing to quote; don't downgrade it.)
+        if v["verdict"] not in ("human", "none"):
             if not evidence or any(
                 not isinstance(line, str)
                 or not line.strip()
@@ -583,6 +584,34 @@ def unwatch_pr(pr: PR):
 
     return {"ok": True, "was_watching": True}
 
+
+
+# ---------------------------------------------------------------------------
+# Integration: Ticket Sharpener (Nimalan) + dashboard adapter (/ui/*)
+import sys as _sys
+from pathlib import Path as _Path
+
+_ROOT = _Path(__file__).resolve().parent.parent
+for _p in (_ROOT / "ticket_sharpener", _ROOT / "ai_engine"):
+    if str(_p) not in _sys.path:
+        _sys.path.insert(0, str(_p))
+
+try:
+    from api import router as sharpener_router  # ticket_sharpener/api.py: POST /api/sharpen, /api/reindex, GET /api/rulepacks
+    app.include_router(sharpener_router)
+except Exception as _e:
+    print("[main] Ticket Sharpener not mounted:", _e)
+
+import ui_api  # noqa: E402
+
+app.include_router(ui_api.router)
+
+
+@app.get("/requirements")
+def list_requirements():
+    with db.conn() as c:
+        rows = c.execute("SELECT * FROM requirements ORDER BY req_id").fetchall()
+    return [dict(r) for r in rows]
 
 '''
 @app.get("/requirements")

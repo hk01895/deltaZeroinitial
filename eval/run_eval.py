@@ -50,7 +50,7 @@ def baseline(requirement, diff):
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--cases", default="eval/cases.jsonl")
-    ap.add_argument("--api", default=os.environ.get("DELTAZERO_API", "http://localhost:8000"))
+    ap.add_argument("--api", default=os.environ.get("DELTAZERO_API", "http://localhost:8000/ui"))
     ap.add_argument("--baseline", action="store_true")
     ap.add_argument("--out", default="eval/results")
     a = ap.parse_args()

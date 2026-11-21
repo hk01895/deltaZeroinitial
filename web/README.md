@@ -29,7 +29,7 @@ The **Rule pack** dropdown in the header (General / Medical / Finance) is sent a
 5. `/eval` → numbers + latency chart.
 
 ## Connecting the backend
-Set `NEXT_PUBLIC_API_URL=http://localhost:8000` in `.env.local`. Endpoints and JSON shapes are in
+Set `NEXT_PUBLIC_API_URL=http://localhost:8000/ui` in `.env.local` (the backend's dashboard adapter, `backend/ui_api.py`). Endpoints and JSON shapes are in
 `../docs/api-contract.md` and `lib/types.ts`. If any request fails, the UI falls back to mock data
 and logs a warning, so the demo never shows a blank screen.
 Backend needs CORS enabled for `http://localhost:3000`.

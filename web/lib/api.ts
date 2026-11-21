@@ -130,7 +130,47 @@ export function getOverrides(): Promise<Override[]> {
 }
 
 export function getEval(): Promise<EvalResult> {
-  return withFallback(() => request<EvalResult>(`/eval`), () => mockEval);
+  // Live mode: never show demo numbers as if they were real. The page shows "not run yet" instead.
+  if (!USING_MOCK) return request<EvalResult>(`/eval`);
+  return Promise.resolve(mockEval);
+}
+
+// ---- Ticket Sharpener (Nimalan) --------------------------------------------
+
+export interface SharpenResult {
+  score: number;
+  grade: string;
+  issues: { type: string; text: string; why: string; fix: string }[];
+  rewrite: string;
+  acceptance_criteria: string[];
+  sub_scores?: Record<string, number> | null;
+  redundancy?: { status: string; explanation?: string; file?: string; matches?: { file: string; start: number; end: number; score: number }[] };
+  fallback?: boolean;
+  note?: string;
+}
+
+export function sharpen(ticket: string, sector: Sector): Promise<SharpenResult> {
+  return withFallback(
+    () => request<SharpenResult>(`/sharpen`, { method: "POST", body: JSON.stringify({ ticket, sector }) }),
+    () => {
+      const vague = ["fast", "better", "handle", "easy", "some", "work", "properly", "errors"].filter((w) => new RegExp(`\\b${w}`, "i").test(ticket));
+      const hasNum = /\d/.test(ticket);
+      const score = Math.max(10, 100 - vague.length * 12 - (hasNum ? 0 : 20) - (/(when|must|returns?)/i.test(ticket) ? 0 : 20));
+      return {
+        score,
+        grade: score >= 75 ? "precise" : score >= 50 ? "needs work" : "vague",
+        issues: [
+          ...vague.map((w) => ({ type: "vague_word", text: w, why: "Vague: two people would read this differently.", fix: "Replace with a measurable target." })),
+          ...(hasNum ? [] : [{ type: "missing_number", text: "(no numbers anywhere)", why: "No number means nothing to test against.", fix: "Add the limit, count or time that defines done." }]),
+        ],
+        rewrite: "The system must " + ticket.replace(/^make /i, "").replace(/\.$/, "") + " within [TBD: limit].\nWhen [TBD: condition], the system must [TBD: behavior].",
+        acceptance_criteria: ["Given [TBD], when [TBD], then [TBD]."],
+        redundancy: /cancel/i.test(ticket)
+          ? { status: "partial", file: "api/routes/appointments.py", explanation: "A cancel endpoint already exists in api/routes/appointments.py. Extend it instead of rebuilding." }
+          : { status: "none" },
+      };
+    },
+  );
 }
 
 export function getRulePack(sector: Sector): Promise<RulePack> {

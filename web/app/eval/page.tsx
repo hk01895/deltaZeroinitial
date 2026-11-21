@@ -13,11 +13,28 @@ const pct = (x: number) => `${Math.round(x * 1000) / 10}%`;
 
 export default function EvalPage() {
   const [data, setData] = useState<EvalResult | null>(null);
+  const [missing, setMissing] = useState(false);
 
   useEffect(() => {
-    getEval().then(setData);
+    getEval()
+      .then(setData)
+      .catch(() => setMissing(true));
   }, []);
 
+  if (missing)
+    return (
+      <div className="space-y-6">
+        <BackLink />
+        <h1 className="text-2xl font-semibold tracking-tight text-slate-50">Eval</h1>
+        <div className={`${card} p-5 text-sm leading-6 text-slate-300`}>
+          <p className="font-medium text-slate-100">No eval results yet.</p>
+          <p className="mt-1">Build 30 labeled cases from real GitHub projects and score the verifier:</p>
+          <pre className="mt-3 overflow-x-auto rounded-lg border border-navy-700 bg-navy-950 p-3 font-mono text-xs text-slate-200">
+            {"python3 eval/build_cases.py --n 10\npython3 eval/run_eval.py --api http://localhost:8000/ui"}
+          </pre>
+        </div>
+      </div>
+    );
   if (!data) return <p className="text-sm text-slate-400">Loading eval…</p>;
 
   // Show the same 3 verdicts as the rest of the app (partial + missing = "Not met").
