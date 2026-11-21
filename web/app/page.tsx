@@ -2,7 +2,6 @@
 
 import Icon from "@/components/Icon";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { getCoverage, getCurrentProject, getEval, getPRs } from "@/lib/api";
 import type { ProjectStatus } from "@/lib/types";
@@ -55,7 +54,6 @@ export default function Overview() {
 
   // While a freshly loaded project's PRs are being checked, refresh every few seconds.
   const [proj, setProj] = useState<ProjectStatus | null>(null);
-  const [projChecked, setProjChecked] = useState(false);
   useEffect(() => {
     let alive = true;
     let timer: ReturnType<typeof setTimeout>;
@@ -63,7 +61,6 @@ export default function Overview() {
       const p = await getCurrentProject();
       if (!alive) return;
       setProj(p);
-      setProjChecked(true);
       if (p && (p.status === "checking" || p.status === "loading")) {
         load();
         timer = setTimeout(tick, 3000);
@@ -106,13 +103,6 @@ export default function Overview() {
   }, [toast]);
 
   const deltaNow = cov ? cov.requirements.length - counts.met : null;
-
-  // Nothing loaded yet: start on the "Load a project" page.
-  const router = useRouter();
-  const nothingLoaded = !!cov && cov.requirements.length === 0 && projChecked && !proj;
-  useEffect(() => {
-    if (nothingLoaded) router.replace("/project/new");
-  }, [nothingLoaded, router]);
 
   // Fire the celebration when the Δ lands on 0 (after the count-down animation).
   useEffect(() => {
