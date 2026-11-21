@@ -4,8 +4,8 @@ When A's helper is ready, change the import in sharpener.py / redundancy.py and 
 
 Setup:
     export NVIDIA_API_KEY=nvapi-...            # from build.nvidia.com
-    export NEMOTRON_FAST_MODEL=<model id>      # optional: defaults to Super with thinking off
-    export NEMOTRON_DEEP_MODEL=<model id>      # optional: defaults to Super
+    export NEMOTRON_FAST_MODEL=<model id>      # optional: defaults to Nemotron 3.5 Lightning
+    export NEMOTRON_DEEP_MODEL=<model id>      # optional: defaults to Nemotron 3.5 Super
     export NEMOTRON_EMBED_MODEL=<model id>     # embedding model (default below is NVIDIA's retrieval embedder)
 Uses only the standard library, so there is nothing to pip install.
 """
@@ -16,10 +16,11 @@ import urllib.error
 import urllib.request
 
 BASE = os.getenv("NVIDIA_BASE_URL", "https://integrate.api.nvidia.com/v1")
-# Hosted API id (NOT the Hugging Face name "NVIDIA-Nemotron-3-Super-120B-A12B-FP8", which is for self-hosting).
-# One model works for both: thinking off = fast path, thinking on = deep path. Swap FAST for a smaller model later.
-SUPER = "nvidia/nemotron-3-super-120b-a12b"
-FAST = os.getenv("NEMOTRON_FAST_MODEL", SUPER)
+# Hosted API ids. nemotron-3-super-120b-a12b reached end of life on 2026-10-03 (HTTP 410), so use the 3.5 models.
+# Fast path (thinking off): Lightning. Deep path (thinking on): 3.5 Super. Override with the env vars if NVIDIA renames them.
+LIGHTNING = "nvidia/nemotron-3.5-lightning-30b-a3b"
+SUPER = "nvidia/nemotron-3.5-super-vl-120b-a12b"
+FAST = os.getenv("NEMOTRON_FAST_MODEL", LIGHTNING)
 DEEP = os.getenv("NEMOTRON_DEEP_MODEL", SUPER)
 EMBED = os.getenv("NEMOTRON_EMBED_MODEL", "nvidia/llama-3.2-nv-embedqa-1b-v2")
 
