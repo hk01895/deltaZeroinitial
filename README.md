@@ -21,7 +21,7 @@ Today's AI code reviewers check a pull request against its ticket. None of them 
 - **Fast/deep thinking:** Nemotron 3.5 Lightning (thinking off) checks first. Only unsure or high-stakes cases go to Nemotron 3.5 Super (thinking on).
 - **Human override + learning:** override any verdict with a reason. Recent overrides become examples in the next prompt.
 - **"Not the fix you want?":** tell the AI what you want instead and it rewrites the fix.
-- **Rule packs:** medical and finance rules (audit logs, encryption, idempotency…) added to every check.
+- **Suggested tickets:** follow-up tickets for whatever a pull request didn't finish, one click each.
 - **Ask Δ:** chat with DeltaZero. "What's left?", "Are we ready to ship?", "Change X". It pushes back on risky changes, and you can still override with a reason.
 - **Auto-check on every push:** paste a PR link once and DeltaZero re-checks it each time new code is pushed.
 - **Eval on real projects:** 30 labeled cases built from real GitHub issues and pull requests, with precision, recall and false-positive rate.
