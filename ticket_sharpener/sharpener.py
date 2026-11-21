@@ -63,7 +63,7 @@ Then rewrite the ticket so it is precise. STRICT RULES FOR THE REWRITE AND ACCEP
 - acceptance_criteria: 2-5 pass/fail checks, also using [TBD: ...] for unknown values.
 
 Scoring guide: a ticket with vague words and no numbers should total under 40. A ticket with measurable limits,
-named inputs/outputs, and a testable behavior should total 80 or more. Do NOT return all zeros.
+named inputs/outputs, and a testable behavior should total 85 or more. Do NOT return all zeros.
 
 Reply with ONLY one JSON object, no other text. Issue types: vague_word, missing_number, missing_acceptance,
 ambiguous_scope, missing_edge_case, sector_gap.
@@ -110,7 +110,7 @@ def heuristic_score(issues):
 
 
 def grade(score):
-    return "precise" if score >= 80 else "needs work" if score >= 50 else "vague"
+    return "precise" if score >= 75 else "needs work" if score >= 50 else "vague"
 
 
 def sharpen_ticket(ticket, sector=None, redundancy=None):
@@ -136,7 +136,7 @@ def sharpen_ticket(ticket, sector=None, redundancy=None):
         for attempt in range(2):  # the model sometimes echoes zero scores: retry once with a nudge
             msg = user_msg if attempt == 0 else user_msg + "\n\nIMPORTANT: sub_scores must be realistic integers, NOT all zeros."
             raw = llm.chat([{"role": "system", "content": SYSTEM}, {"role": "user", "content": msg}],
-                           thinking=False, max_tokens=1400, temperature=0.2 if attempt == 0 else 0.5)
+                           thinking=False, max_tokens=1400, temperature=0.0 if attempt == 0 else 0.5)
             data = parse_json(raw)
             subs = {k: max(0, min(25, int(data["sub_scores"].get(k, 0)))) for k in ("measurable", "specific", "testable", "complete")}
             if sum(subs.values()) > 0:
