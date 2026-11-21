@@ -235,6 +235,8 @@ def coverage(sector: str | None = None):
         for e in c.execute("SELECT * FROM verdict_extras"):
             extras[(e["pr_id"], e["head_sha"], e["req_id"])] = json.loads(e["data"])
         overrides = {o["req_id"]: dict(o) for o in c.execute("SELECT * FROM overrides ORDER BY id")}
+        follow_ups = {m["state"].split(":", 1)[1]: m["id"]
+                      for m in c.execute("SELECT id, state FROM ticket_meta WHERE state LIKE 'followup:%'")}
     out = []
     for r in reqs:
         v = latest.get(r["req_id"])
@@ -257,7 +259,7 @@ def coverage(sector: str | None = None):
             "ticket_key": key, "ticket_url": _ticket_url(key),
             "pr_id": _num(v["pr_id"]) if v else None,
             "pr_url": f"https://github.com/{v['pr_id'].rsplit('/', 1)[0]}/pull/{_num(v['pr_id'])}" if v else None,
-            "drift": None, "reason": reason,
+            "drift": None, "reason": reason, "follow_up": follow_ups.get(r["req_id"]),
         })
     proj = _project()
     return {"project": proj["name"] if proj else PROJECT, "spec_name": proj["spec_source"] if proj else SPEC_NAME,
@@ -438,6 +440,7 @@ class TicketIn(BaseModel):
     title: str
     description: str = ""
     acceptance_criteria: list[str] = []
+    follow_up: bool = False  # suggested ticket for a requirement a PR didn't finish: don't relink it
 
 
 @router.post("/tickets")
@@ -450,7 +453,10 @@ def create_ticket(t: TicketIn):
             key = f"{TICKET_PREFIX}-{n}"
         body = t.description + "\n\nAcceptance criteria:\n" + "\n".join(f"- {a}" for a in t.acceptance_criteria)
         c.execute("INSERT INTO tickets(id, title, body) VALUES (?, ?, ?)", (key, t.title, body))
-        c.execute("UPDATE requirements SET ticket_id=? WHERE req_id=?", (key, t.req_id))
+        if t.follow_up:
+            c.execute("INSERT OR REPLACE INTO ticket_meta(id, url, state) VALUES (?, NULL, ?)", (key, f"followup:{t.req_id}"))
+        else:
+            c.execute("UPDATE requirements SET ticket_id=? WHERE req_id=?", (key, t.req_id))
     return {"ticket_key": key, "ticket_url": _ticket_url(key) or ""}
 
 

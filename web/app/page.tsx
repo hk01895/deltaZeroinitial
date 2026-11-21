@@ -12,6 +12,7 @@ import CreateTicketModal from "@/components/CreateTicketModal";
 import PRLinkBox from "@/components/PRLinkBox";
 import CountUp from "@/components/CountUp";
 import RequirementMap from "@/components/RequirementMap";
+import SuggestedTickets from "@/components/SuggestedTickets";
 import Celebration from "@/components/Celebration";
 import { btnPrimary, card, eyebrow, link } from "@/lib/ui";
 
@@ -89,6 +90,11 @@ export default function Overview() {
 
   const buckets = useMemo(() => groupCounts(cov?.requirements.map((r) => r.status) ?? []), [cov]);
   const [creating, setCreating] = useState<CoverageRow | null>(null);
+  const [followUp, setFollowUp] = useState(false);
+  const openCreate = (r: CoverageRow, asFollowUp = false) => {
+    setFollowUp(asFollowUp);
+    setCreating(r);
+  };
   const [toast, setToast] = useState<string | null>(null);
   useEffect(() => {
     if (!toast) return;
@@ -246,7 +252,7 @@ export default function Overview() {
                   </div>
                   <button
                     data-tour="create-ticket"
-                    onClick={() => setCreating(r)}
+                    onClick={() => openCreate(r)}
                     className="shrink-0 rounded-md border border-cyan-300/40 bg-cyan-400/10 px-3 py-1.5 text-sm font-medium text-cyan-100 hover:bg-cyan-400/20"
                   >
                     <span className="inline-flex items-center gap-1.5">
@@ -348,15 +354,19 @@ export default function Overview() {
           </h2>
           <p className="text-sm text-slate-300">Every promise in the spec, and where it got to: spec → ticket → pull request.</p>
         </div>
-        <RequirementMap rows={cov.requirements} onCreateTicket={setCreating} />
+        <RequirementMap rows={cov.requirements} onCreateTicket={(r) => openCreate(r)} />
       </section>
+
+      {/* ---------- Suggested tickets: last, not the main thing ---------- */}
+      <SuggestedTickets rows={cov.requirements} onCreate={(r) => openCreate(r, true)} />
 
       {creating && (
         <CreateTicketModal
           row={creating}
+          followUp={followUp}
           onClose={() => setCreating(null)}
           onCreated={(key) => {
-            setToast(`${key} created. ${creating.req_id} is no longer lost.`);
+            setToast(followUp ? `${key} created as a follow-up for ${creating.req_id}.` : `${key} created. ${creating.req_id} is no longer lost.`);
             setCreating(null);
             load();
           }}

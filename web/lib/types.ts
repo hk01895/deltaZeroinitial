@@ -80,6 +80,7 @@ export interface CoverageRow {
   pr_url: string | null;
   drift?: string | null; // e.g. "Spec says 15 min, ticket says 30 min"
   reason?: string | null; // one plain-language line on why it is not met (null when met)
+  follow_up?: string | null; // key of a suggested follow-up ticket already created for it
 }
 
 export interface Coverage {
@@ -120,6 +121,7 @@ export interface TicketDraft {
   acceptance_criteria: string[];
   precision_score: number; // 0..100 from the Ticket Sharpener
   issues: string[]; // what the sharpener fixed or still flags
+  follow_up?: boolean; // create without relinking the requirement (suggested follow-up)
 }
 
 export interface CreatedTicket {

@@ -1,8 +1,7 @@
 // "Ask Δ" assistant. Tries POST /assistant on the backend first; if that endpoint
 // isn't there, a small rule-based brain answers from the loaded project's real data.
 
-import { API_URL, getCoverage, getRulePack } from "./api";
-import type { RulePack } from "./types";
+import { API_URL, getCoverage } from "./api";
 import { look } from "@/components/StatusBadge";
 import type { CoverageRow, Sector } from "./types";
 
@@ -86,18 +85,6 @@ function findReq(msg: string, rows: CoverageRow[]): CoverageRow | null {
 
 const numbers = (s: string) => (s.match(/\d+(\.\d+)?\s*(seconds?|secs?|minutes?|mins?|hours?|hrs?|days?|%|mb)?/gi) ?? []).map((x) => x.trim().toLowerCase());
 
-function ruleFor(pack: RulePack | null, msg: string): string | null {
-  if (!pack) return null;
-  const m = msg.toLowerCase();
-  const hit =
-    pack.rules.find((r) => /audit/i.test(r.text) && /audit|log/.test(m)) ??
-    pack.rules.find((r) => /encrypt/i.test(r.text) && /encrypt|plain/.test(m)) ??
-    pack.rules.find((r) => /test/i.test(r.text) && /test/.test(m)) ??
-    pack.rules.find((r) => /idempot/i.test(r.text) && /idempot|retry/.test(m)) ??
-    null;
-  return hit ? `${hit.id}: ${hit.text}` : null;
-}
-
 function trace(r: CoverageRow) {
   const t = r.ticket_key ? r.ticket_key : "no ticket";
   const p = r.pr_id ? `PR #${r.pr_id} (${r.status === "met" ? "done" : r.status === "partial" ? "partly done" : "not done"})` : "no PR yet";
@@ -120,7 +107,6 @@ async function localBrain(raw: string, sector: Sector): Promise<AssistantReply> 
   const msg = raw.trim();
   const m = msg.toLowerCase();
   const cov = await getCoverage(sector);
-  const pack = await getRulePack(sector).catch(() => null);
   const rows = cov.requirements;
   const open = rows.filter((r) => r.status !== "met");
   const delta = open.length;
@@ -174,14 +160,13 @@ async function localBrain(raw: string, sector: Sector): Promise<AssistantReply> 
 
   // Change requests: apply, or push back
   if (/change|make|set|update|instead|switch|move|let'?s|should|can we|remove|skip|drop|disable|add/.test(m)) {
-    const rule = WEAKEN.test(msg) ? ruleFor(pack, msg) : null;
-    if (rule) {
+    if (!req && WEAKEN.test(msg)) {
       return {
         reply: "I'd push back on this one.",
         pushback: {
           change: msg,
           req_id: req?.req_id ?? null,
-          rule: `This goes against the active **${pack?.name ?? sector}** rule pack (${rule}).`,
+          rule: "This weakens what the spec promises.",
           suggestion: "Keep the requirement as written. If there's a real reason (e.g. another system already does it), override with that reason so reviewers can see it.",
         },
       };

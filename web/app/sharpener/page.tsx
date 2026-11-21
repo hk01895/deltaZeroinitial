@@ -75,7 +75,6 @@ function SharpenerInner() {
           <button type="submit" disabled={busy || !text.trim()} className={btnPrimary}>
             {busy ? "Sharpening with Nemotron…" : "Sharpen ticket"}
           </button>
-          <span className="text-xs text-slate-400">Rule pack: {sector}</span>
         </div>
       </form>
 

@@ -7,7 +7,6 @@ import { getPRReview, rerunPR } from "@/lib/api";
 import type { Override, PRReview, Verdict } from "@/lib/types";
 import { useSector } from "@/components/SectorProvider";
 import VerdictCard from "@/components/VerdictCard";
-import RulePackPanel from "@/components/RulePackPanel";
 import { STATUS_BAR, STATUS_LABEL } from "@/components/StatusBadge";
 import { BackLink } from "@/components/AppShell";
 import { btnPrimary, card, eyebrow, glow, glowStrong, link } from "@/lib/ui";
@@ -146,7 +145,6 @@ export default function PRReviewPage() {
 
         {/* Side panel */}
         <div className="space-y-4">
-          <RulePackPanel />
           <div data-tour="how" className={`${card} p-4`}>
             <p className={eyebrow}>How this was checked</p>
             <ul className="mt-3 space-y-2 text-sm text-slate-300">

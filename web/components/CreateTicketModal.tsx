@@ -9,10 +9,12 @@ import { btnPrimary, input } from "@/lib/ui";
 // you edit it, and creating it moves the requirement out of "Lost".
 export default function CreateTicketModal({
   row,
+  followUp = false,
   onClose,
   onCreated,
 }: {
   row: CoverageRow;
+  followUp?: boolean;
   onClose: () => void;
   onCreated: (ticketKey: string) => void;
 }) {
@@ -24,11 +26,15 @@ export default function CreateTicketModal({
   useEffect(() => {
     draftTicket(row)
       .then((d) => {
-        setDraft(d);
+        setDraft(
+          followUp
+            ? { ...d, description: `Follow-up to PR #${row.pr_id}.${row.reason ? ` Still missing: ${row.reason}` : ""}\n\n${d.description}` }
+            : d,
+        );
         setCriteria(d.acceptance_criteria.join("\n"));
       })
       .catch((e) => setError(e instanceof Error ? e.message : "Could not draft the ticket"));
-  }, [row]);
+  }, [row, followUp]);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => e.key === "Escape" && onClose();
@@ -48,7 +54,7 @@ export default function CreateTicketModal({
     setSaving(true);
     setError(null);
     try {
-      const t = await createTicket({ ...draft, acceptance_criteria: ac });
+      const t = await createTicket({ ...draft, acceptance_criteria: ac, follow_up: followUp });
       onCreated(t.ticket_key);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Could not create the ticket");
@@ -67,8 +73,10 @@ export default function CreateTicketModal({
       >
         <div className="flex items-start justify-between gap-3">
           <div>
-            <p className="text-[11px] font-medium uppercase tracking-[0.12em] text-rose-200">Lost · {row.req_id}</p>
-            <h2 className="mt-1 text-lg font-semibold text-slate-50">Create a ticket</h2>
+            <p className={`text-[11px] font-medium uppercase tracking-[0.12em] ${followUp ? "text-cyan-200" : "text-rose-200"}`}>
+              {followUp ? `Follow-up · ${row.req_id} · PR #${row.pr_id}` : `Lost · ${row.req_id}`}
+            </p>
+            <h2 className="mt-1 text-lg font-semibold text-slate-50">{followUp ? "Create a follow-up ticket" : "Create a ticket"}</h2>
             <p className="mt-1 text-sm text-slate-300">DeltaZero drafted a precise ticket from the spec. Edit anything, then create it.</p>
           </div>
           <button type="button" onClick={onClose} aria-label="Close" className="rounded px-2 text-xl leading-none text-slate-400 hover:text-slate-100">

@@ -4,7 +4,7 @@ import Icon from "@/components/Icon";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { getCurrentProject, loadProject } from "@/lib/api";
-import type { ProjectLoadResult, ProjectStatus, Sector } from "@/lib/types";
+import type { ProjectLoadResult, ProjectStatus } from "@/lib/types";
 import { useSector } from "@/components/SectorProvider";
 import { BackLink } from "@/components/AppShell";
 import { btnPrimary, card, eyebrow, input } from "@/lib/ui";
@@ -24,7 +24,7 @@ const STEPS = [
 ];
 
 export default function NewProjectPage() {
-  const { sector, setSector } = useSector();
+  const { sector } = useSector();
   const [repo, setRepo] = useState("");
   const [name, setName] = useState("");
   const [spec, setSpec] = useState("");
@@ -120,14 +120,6 @@ export default function NewProjectPage() {
                 className={`${input} mt-1.5 block w-64 px-3 py-2 placeholder:text-slate-500`}
                 disabled={busy}
               />
-            </label>
-            <label className="block">
-              <span className="text-sm font-medium text-slate-100">Rule pack</span>
-              <select value={sector} onChange={(e) => setSector(e.target.value as Sector)} className={`${input} mt-1.5 block px-3 py-2`} disabled={busy}>
-                <option value="general">General software</option>
-                <option value="medical">Medical</option>
-                <option value="finance">Finance</option>
-              </select>
             </label>
           </div>
 

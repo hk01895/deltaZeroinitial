@@ -1,6 +1,5 @@
 import Icon from "./Icon";
 import Link from "next/link";
-import SectorSelect from "./SectorSelect";
 import Assistant from "./Assistant";
 
 // Minimal top bar, no sidebar. The overview page is the hub; everything else
@@ -26,7 +25,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
                 <Icon name="plus" className="h-4 w-4" /> Load project
               </span>
             </Link>
-            <SectorSelect />
+            
           </div>
         </div>
       </header>
