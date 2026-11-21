@@ -1,3 +1,32 @@
-__pycache__/
-.cache_deltazero_index.json
+# Secrets
 .env
+**/.env
+.env.local
+
+# Virtual environments
+.venv/
+venv/
+
+# Python
+__pycache__/
+*.pyc
+
+# Database
+*.db
+*.db-journal
+*.db-wal
+*.db-shm
+
+# Ticket Sharpener cache
+.cache_deltazero_index.json
+
+# Frontend
+node_modules/
+.next/
+*.tsbuildinfo
+
+# Eval outputs
+eval/results/
+
+# IDE
+.vscode/
