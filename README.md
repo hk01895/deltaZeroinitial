@@ -26,7 +26,7 @@ Today's AI code reviewers check a pull request against its ticket. None of them 
 - **Auto-check on every push:** paste a PR link once and DeltaZero re-checks it each time new code is pushed.
 - **Eval on real projects:** 30 labeled cases built from real GitHub issues and pull requests, with precision, recall and false-positive rate.
 - **Accessibility first:** three status colors only, every status spelled out in words, high contrast, keyboard focus, screen-reader labels, and works on phones.
-- **Live demo:** a guided 19-step tour of every feature, in plain English.
+- **Load any project:** point DeltaZero at a GitHub repo and its spec (or README). GitHub Issues become the tickets, and every PR that closes one is checked and watched.
 
 ## 🛠️ Tech stack
 | Part | Technology | Purpose |
@@ -41,9 +41,9 @@ Today's AI code reviewers check a pull request against its ticket. None of them 
 | Version control | Git + GitHub | Share code with the team |
 
 ## ⚙️ How it works
-1. **Spec in:** Nemotron Super splits the spec into requirements: REQ-001, REQ-002, …
-2. **Tickets:** each ticket goes through the Ticket Sharpener before work starts. Requirements with no ticket show up as **Lost**.
-3. **Pull request:** a developer opens a PR with the ticket key in the branch name (like `CARE-12-booking`). DeltaZero links it to the ticket automatically.
+1. **Load a project:** a GitHub repo + its spec (or README). Nemotron Super splits the spec into requirements: REQ-001, REQ-002, …
+2. **Tickets:** the repo's GitHub Issues become tickets, and Nemotron Lightning matches each requirement to one. Requirements with no ticket show up as **Lost**. New tickets go through the Ticket Sharpener.
+3. **Pull request:** a PR that closes an issue (`Fixes #12`), or has the ticket key in its branch name (like `CARE-12-booking`), is linked to that ticket automatically.
 4. **Check:** for every requirement on that ticket, Nemotron Lightning reads the diff and decides Met / Not met / Check needed. If it isn't sure, or the requirement is high-stakes, Nemotron Super thinks it through.
 5. **Evidence Guard:** the quoted code is checked against the real diff. No proof means a person checks.
 6. **Humans stay in charge:** overrides and "rewrite this fix" feedback are saved and fed into future checks.
@@ -74,15 +74,15 @@ npm run dev
 ```
 Then open http://localhost:3000.
 
-**3. Check a pull request:** paste a GitHub PR link into "Check a pull request" on the home page.
+**3. Load a real project:** click **+ Load project**, paste a GitHub repo URL and the spec (or leave the spec empty to use the repo's README). DeltaZero:
+- splits the spec into requirements (Nemotron Super)
+- reads the repo's **GitHub Issues as tickets** and matches each requirement to one (Nemotron Lightning). Requirements with no issue show as **Lost**.
+- checks every PR that closes one of those issues (`Fixes #12`, `Closes #12`, or a branch like `12-search`), then keeps watching open PRs for new pushes
+
+**Or check one pull request:** paste its link into "Check a pull request" on the home page.
 
 **No API key yet?** Set `DELTAZERO_FAKE_LLM=1` in `backend/.env` to run the AI in offline demo mode. To run the dashboard on built-in demo data with no backend at all, leave `NEXT_PUBLIC_API_URL` empty in `web/.env.local`.
 
-**Your own spec instead of the demo:**
-```bash
-curl -X POST localhost:8000/ui/spec -H 'content-type: application/json' \
-     -d '{"text": "- Users can reset passwords by email\n- Admins can export reports as CSV"}'
-```
 
 **Run the eval on real GitHub projects:**
 ```bash

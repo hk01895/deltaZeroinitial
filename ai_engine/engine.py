@@ -310,13 +310,61 @@ def regenerate_fix(req_id, requirement, code, previous_diff, feedback) -> dict:
 
 
 # ---------------------------------------------------------------------------
+# Match requirements to tickets (GitHub issues) when loading a real project
+
+
+def match_requirements(requirements, issues) -> dict:
+    """requirements: [{req_id, text}]; issues: [{key, title, body}] -> {req_id: issue key or None}."""
+    if not requirements or not issues:
+        return {r["req_id"]: None for r in requirements}
+    reqs = "\n".join(f"{r['req_id']}: {r['text']}" for r in requirements)
+    iss = "\n".join(f"{i['key']}: {i['title']} :: {(i.get('body') or '')[:240]}" for i in issues[:80])
+    prompt = f"""
+    You are DeltaZero's ticket matcher.
+
+    For each REQUIREMENT, find the ONE ticket (GitHub issue) that asks for that work.
+    Only match when the ticket is clearly about the same behavior. If no ticket matches, use null.
+    Several requirements may match the same ticket.
+
+    REQUIREMENTS:
+    {reqs}
+
+    TICKETS:
+    {iss}
+
+    Return ONLY valid JSON: {{"matches": {{"REQ-001": "#12", "REQ-002": null}}}}
+    """
+    try:
+        data = parse_json(nemotron(prompt, LIGHTNING, thinking=False))
+        m = data.get("matches", {}) if isinstance(data, dict) else {}
+    except Exception:
+        m = {}
+    keys = {i["key"] for i in issues}
+    out = {}
+    for r in requirements:
+        k = m.get(r["req_id"])
+        out[r["req_id"]] = k if k in keys else None
+    return out
+
+
+# ---------------------------------------------------------------------------
 # Offline fake (DELTAZERO_FAKE_LLM=1): simple keyword overlap so demos run without a key
 
 
 def _fake_answer(prompt: str, model: str) -> str:
+    if "ticket matcher" in prompt:
+        reqs = re.findall(r"^\s*(REQ-\d+): (.+)$", prompt.split("REQUIREMENTS:")[1].split("TICKETS:")[0], re.M)
+        tix = re.findall(r"^\s*(#\d+): (.+)$", prompt.split("TICKETS:")[1].split("Return ONLY")[0], re.M)
+        matches = {}
+        for rid, text in reqs:
+            words = {w for w in re.findall(r"[a-z]{4,}", text.lower())}
+            best = max(tix, key=lambda t: len(words & set(re.findall(r"[a-z]{4,}", t[1].lower()))), default=None)
+            score = len(words & set(re.findall(r"[a-z]{4,}", best[1].lower()))) if best else 0
+            matches[rid] = best[0] if best and score >= 2 else None
+        return json.dumps({"matches": matches})
     if "requirements splitter" in prompt:
         desc = prompt.split("PROJECT DESCRIPTION:")[1].split("Instructions:")[0]
-        items = [l.strip(" -*\t") for l in desc.splitlines() if len(l.strip(" -*\t")) > 8]
+        items = [l.strip(" -*\t") for l in desc.splitlines() if len(l.strip(" -*\t")) > 8 and not l.strip().startswith("#")]
         return json.dumps({"requirements": [{"req_id": f"REQ-{i+1:03d}", "requirement": t} for i, t in enumerate(items)]})
     if "A reviewer did not like your suggested fix" in prompt:
         fb = prompt.split("WHAT THE REVIEWER WANTS INSTEAD:")[1].split("Write a NEW fix")[0].strip()

@@ -2,7 +2,8 @@
 
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { finishDemoSprint, getCoverage, getEval, getPRs, USING_MOCK } from "@/lib/api";
+import { finishDemoSprint, getCoverage, getCurrentProject, getEval, getPRs, USING_MOCK } from "@/lib/api";
+import type { ProjectStatus } from "@/lib/types";
 import type { Coverage, CoverageRow, CoverageStatus, EvalResult, PRSummary } from "@/lib/types";
 import { useSector } from "@/components/SectorProvider";
 import { ColorKey, GROUP, GROUP_ORDER, TONE, groupCounts } from "@/components/StatusBadge";
@@ -11,7 +12,7 @@ import PRLinkBox from "@/components/PRLinkBox";
 import CountUp from "@/components/CountUp";
 import RequirementMap from "@/components/RequirementMap";
 import Celebration from "@/components/Celebration";
-import { card, eyebrow, link } from "@/lib/ui";
+import { btnPrimary, card, eyebrow, link } from "@/lib/ui";
 
 
 
@@ -41,9 +42,32 @@ export default function Overview() {
     getPRs().then(setPrs);
   }, [sector]);
 
+  // While a freshly loaded project's PRs are being checked, refresh every few seconds.
+  const [proj, setProj] = useState<ProjectStatus | null>(null);
+  useEffect(() => {
+    let alive = true;
+    let timer: ReturnType<typeof setTimeout>;
+    const tick = async () => {
+      const p = await getCurrentProject();
+      if (!alive) return;
+      setProj(p);
+      if (p && (p.status === "checking" || p.status === "loading")) {
+        load();
+        timer = setTimeout(tick, 3000);
+      } else if (p) {
+        load();
+      }
+    };
+    tick();
+    return () => {
+      alive = false;
+      clearTimeout(timer);
+    };
+  }, [load]);
+
   useEffect(() => {
     load();
-    getEval().then(setEv);
+    getEval().then(setEv).catch(() => setEv(null));
     window.addEventListener("dz:refresh", load);
     return () => window.removeEventListener("dz:refresh", load);
   }, [load]);
@@ -85,6 +109,20 @@ export default function Overview() {
 
   if (!cov) return <p className="py-24 text-center text-sm text-slate-400">Measuring the delta…</p>;
 
+  if (cov.requirements.length === 0)
+    return (
+      <div className="mx-auto max-w-xl py-16 text-center">
+        <p className="text-6xl font-semibold text-cyan-300/70">Δ</p>
+        <h1 className="mt-4 text-2xl font-semibold tracking-tight text-slate-50">No project loaded yet</h1>
+        <p className="mt-2 text-sm leading-6 text-slate-300">
+          Point DeltaZero at a GitHub repo and its spec. It finds every promise, matches it to an issue, and checks the pull requests.
+        </p>
+        <Link href="/project/new" className={`${btnPrimary} mt-6 inline-block`}>
+          Load a project
+        </Link>
+      </div>
+    );
+
   const total = cov.requirements.length;
   const delta = total - counts.met;
   const zero = delta === 0;
@@ -103,8 +141,13 @@ export default function Overview() {
           }`}
         />
         <p className={`${eyebrow} relative`}>
-          The delta · <span className="font-mono normal-case tracking-normal text-slate-500">{cov.spec_name}</span>
+          {cov.project} · <span className="font-mono normal-case tracking-normal text-slate-500">{cov.spec_name}</span>
         </p>
+        {proj && proj.status !== "ready" && proj.status !== "error" && (
+          <p className="relative mt-2 text-xs text-cyan-200">
+            Checking pull requests{proj.progress.total ? ` ${proj.progress.done ?? 0}/${proj.progress.total}` : ""}…
+          </p>
+        )}
         <h1
           data-tour="delta"
           onClick={() => zero && setBurst((b) => b + 1)}
@@ -257,7 +300,7 @@ export default function Overview() {
               <p className="mt-3 text-[11px] text-slate-500">{ev.n_cases} labeled cases</p>
             </>
           ) : (
-            <p className="mt-3 text-sm text-slate-500">Loading…</p>
+            <p className="mt-3 text-sm text-slate-400">{USING_MOCK ? "Loading…" : "No eval run yet. Run eval/run_eval.py to see how accurate it is."}</p>
           )}
         </Link>
       </section>

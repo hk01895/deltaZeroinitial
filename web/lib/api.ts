@@ -16,6 +16,9 @@ import {
   mockRulePacks,
 } from "./mock";
 import type {
+  ProjectLoadRequest,
+  ProjectLoadResult,
+  ProjectStatus,
   CoverageRow,
   CreatedTicket,
   FixSuggestion,
@@ -39,7 +42,15 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
     headers: { "Content-Type": "application/json", ...(init?.headers ?? {}) },
     cache: "no-store",
   });
-  if (!res.ok) throw new Error(`${init?.method ?? "GET"} ${path} → ${res.status}`);
+  if (!res.ok) {
+    let detail = "";
+    try {
+      detail = (await res.json())?.detail ?? "";
+    } catch {
+      /* not JSON */
+    }
+    throw new Error(detail ? String(detail) : `${init?.method ?? "GET"} ${path} → ${res.status}`);
+  }
   return (await res.json()) as T;
 }
 
@@ -227,4 +238,34 @@ export function checkPRLink(url: string): Promise<{ pr_id: number }> {
       return { pr_id: parsed.number };
     },
   );
+}
+
+// ---- Load a project (repo + spec → requirements, GitHub issues as tickets, PRs tracked) ----
+
+let mockProject: ProjectStatus | null = null;
+
+export function loadProject(body: ProjectLoadRequest): Promise<ProjectLoadResult> {
+  if (!USING_MOCK) return request<ProjectLoadResult>(`/projects`, { method: "POST", body: JSON.stringify(body) });
+  // Demo mode: no backend, so "loading" shows the built-in demo project.
+  const repo = body.repo_url.replace(/^https?:\/\/github\.com\//, "").replace(/\/$/, "") || "demo/careslot";
+  mockProject = { name: body.name || repo, repo, spec_source: body.spec ? "pasted spec" : "README.md", sector: body.sector, status: "checking", progress: { step: "prs", done: 0, total: 3 } };
+  let done = 0;
+  const t = setInterval(() => {
+    done += 1;
+    if (!mockProject) return clearInterval(t);
+    mockProject = { ...mockProject, status: done >= 3 ? "ready" : "checking", progress: { step: done >= 3 ? "done" : "prs", done, total: 3, checked: done, current: `PR #${[12, 9, 7][done - 1] ?? 7}` } };
+    if (done >= 3) clearInterval(t);
+  }, 900);
+  return new Promise((r) =>
+    setTimeout(() => r({ project: mockProject!.name, repo, spec_source: mockProject!.spec_source, requirements: 10, tickets: 4, linked_requirements: 8, lost: 2, prs_to_check: 3 }), 1200),
+  );
+}
+
+export async function getCurrentProject(): Promise<ProjectStatus | null> {
+  if (USING_MOCK) return mockProject;
+  try {
+    return await request<ProjectStatus>(`/projects/current`);
+  } catch {
+    return null;
+  }
 }

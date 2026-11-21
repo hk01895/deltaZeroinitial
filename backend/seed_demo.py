@@ -39,7 +39,7 @@ def main(reset=False, sector="medical"):
         if reset:
             for t in ("verdicts", "overrides", "pr_tickets", "requirements", "tickets"):
                 c.execute(f"DELETE FROM {t}")
-            for t in ("verdict_extras", "pr_meta", "fix_feedback"):
+            for t in ("verdict_extras", "pr_meta", "fix_feedback", "project", "ticket_meta"):
                 try:
                     c.execute(f"DELETE FROM {t}")
                 except Exception:

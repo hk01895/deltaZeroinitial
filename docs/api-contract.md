@@ -136,3 +136,9 @@ Backend calls Nemotron Super with: requirement + diff + previous suggestion + re
 ## Verifier (used by the PR check and by eval/run_eval.py)
 `POST /verify` `{ "requirements": [{ "req_id": "REQ-1", "text": "..." }], "diff": "<unified diff>", "sector": "general" }`
 → `RequirementVerdict[]` (one per requirement, same shape as in `PRReview.verdicts`).
+
+## Load a project
+`POST /ui/projects` `{ "repo_url": "https://github.com/owner/repo", "spec": "", "name": "optional", "sector": "general" }`
+(empty `spec` = use the repo's README) → `{ project, repo, spec_source, requirements, tickets, linked_requirements, lost, prs_to_check }`.
+Replaces the current project. PRs are checked in the background; poll `GET /ui/projects/current` →
+`{ name, repo, spec_source, sector, status: "loading" | "checking" | "ready" | "error", progress: { step, done, total, checked, skipped } }`.

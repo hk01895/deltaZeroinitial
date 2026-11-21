@@ -53,6 +53,11 @@ def _init():
                 pr_id TEXT, head_sha TEXT, req_id TEXT, data TEXT,
                 PRIMARY KEY (pr_id, head_sha, req_id)
             );
+            CREATE TABLE IF NOT EXISTS project (
+                id INTEGER PRIMARY KEY CHECK (id = 1), name TEXT, repo TEXT, spec_source TEXT, sector TEXT,
+                status TEXT, progress TEXT, created_at TEXT DEFAULT CURRENT_TIMESTAMP
+            );
+            CREATE TABLE IF NOT EXISTS ticket_meta (id TEXT PRIMARY KEY, url TEXT, state TEXT);
             CREATE TABLE IF NOT EXISTS fix_feedback (
                 id INTEGER PRIMARY KEY AUTOINCREMENT, pr_id TEXT, req_id TEXT, feedback TEXT,
                 created_at TEXT DEFAULT CURRENT_TIMESTAMP
@@ -118,7 +123,13 @@ def _fetch_meta(owner, repo, number):
 
 
 def _ticket_url(key):
-    return f"{TICKET_URL.rstrip('/')}/{key}" if (TICKET_URL and key) else None
+    if not key:
+        return None
+    with db.conn() as c:
+        row = c.execute("SELECT url FROM ticket_meta WHERE id=?", (key,)).fetchone()
+    if row and row["url"]:
+        return row["url"]
+    return f"{TICKET_URL.rstrip('/')}/{key}" if TICKET_URL else None
 
 
 def _evidence(extras, verdict_row):
@@ -248,7 +259,9 @@ def coverage(sector: str | None = None):
             "pr_url": f"https://github.com/{v['pr_id'].rsplit('/', 1)[0]}/pull/{_num(v['pr_id'])}" if v else None,
             "drift": None, "reason": reason,
         })
-    return {"project": PROJECT, "spec_name": SPEC_NAME, "updated_at": _now(), "requirements": out}
+    proj = _project()
+    return {"project": proj["name"] if proj else PROJECT, "spec_name": proj["spec_source"] if proj else SPEC_NAME,
+            "updated_at": _now(), "requirements": out}
 
 
 @router.get("/prs")
@@ -480,3 +493,164 @@ def verify_direct(body: VerifyIn):
                     "evidence_verified": not rv.get("downgraded_from"), "suggested_diff": rv.get("suggested_diff"),
                     "suggested_test": rv.get("suggested_test")})
     return out
+
+
+# ---------------------------------------------------------------------------
+# Load a real project: GitHub repo + spec -> requirements, issues as tickets, PRs tracked
+
+import threading  # noqa: E402
+
+CLOSES = re.compile(r"\b(?:close[sd]?|fix(?:e[sd])?|resolve[sd]?)\s*:?\s+#(\d+)", re.I)
+BRANCH_ISSUE = re.compile(r"(?:^|[/_-])(?:issue-?|gh-?)?(\d{1,6})(?:[/_-]|$)", re.I)
+
+
+def _project():
+    with db.conn() as c:
+        row = c.execute("SELECT * FROM project WHERE id=1").fetchone()
+    return dict(row) if row else None
+
+
+def _set_progress(status, **progress):
+    with db.conn() as c:
+        c.execute("UPDATE project SET status=?, progress=? WHERE id=1", (status, json.dumps(progress)))
+
+
+def _gh_json(path, params=None):
+    r = requests.get(f"{github.API}{path}", headers=github.headers(), params=params or {}, timeout=30)
+    r.raise_for_status()
+    return r.json()
+
+
+def _readme(owner, repo):
+    try:
+        r = requests.get(f"{github.API}/repos/{owner}/{repo}/readme", headers=github.headers("application/vnd.github.raw"), timeout=30)
+        r.raise_for_status()
+        return r.text
+    except Exception:
+        return ""
+
+
+def _linked_issues(pr, issue_keys):
+    text = f"{pr.get('title', '')}\n{pr.get('body') or ''}"
+    nums = {f"#{n}" for n in CLOSES.findall(text)}
+    nums |= {f"#{n}" for n in re.findall(r"\(#(\d+)\)", pr.get("title", ""))}
+    m = BRANCH_ISSUE.search(pr.get("head", {}).get("ref", "") or "")
+    if m:
+        nums.add(f"#{m.group(1)}")
+    return [k for k in nums if k in issue_keys]
+
+
+def _check_prs_in_background(owner, repo, prs, issue_keys):
+    import main
+
+    checked, skipped = 0, []
+    for i, pr in enumerate(prs):
+        n = pr["number"]
+        pid = f"{owner}/{repo}/{n}"
+        _set_progress("checking", step="prs", done=i, total=len(prs), current=f"PR #{n}")
+        links = _linked_issues(pr, issue_keys)
+        with db.conn() as c:
+            c.execute("INSERT OR REPLACE INTO pr_meta(pr_id, number, title, url, branch) VALUES (?, ?, ?, ?, ?)",
+                      (pid, n, pr.get("title", f"PR #{n}"), pr.get("html_url", ""), pr.get("head", {}).get("ref", "")))
+            for k in links:
+                c.execute("INSERT OR IGNORE INTO pr_tickets(pr_id, ticket_id) VALUES (?, ?)", (pid, k))
+            has_reqs = bool(links) and c.execute(
+                f"SELECT 1 FROM requirements WHERE ticket_id IN ({','.join('?' * len(links))}) LIMIT 1", links).fetchone()
+        if not has_reqs:
+            skipped.append(n)
+            continue
+        try:
+            main.run_verification(owner, repo, n)
+            checked += 1
+            if pr.get("state") == "open":
+                try:
+                    main.watch_pr(main.PR(pr_url=f"https://github.com/{owner}/{repo}/pull/{n}"))
+                except Exception:
+                    pass
+        except Exception as e:
+            skipped.append(n)
+            print(f"[project] PR #{n} not checked: {e}")
+    _set_progress("ready", step="done", done=len(prs), total=len(prs), checked=checked, skipped=skipped)
+
+
+class ProjectIn(BaseModel):
+    name: str | None = None
+    repo_url: str
+    spec: str = ""
+    sector: str | None = "general"
+    max_prs: int = 15
+
+
+@router.post("/projects")
+def load_project(body: ProjectIn):
+    """Load a real project. Replaces the current one (one project at a time)."""
+    m = re.match(r"^(?:https?://github\.com/)?([A-Za-z0-9_.-]+)/([A-Za-z0-9_.-]+?)(?:\.git)?/?$", body.repo_url.strip())
+    if not m:
+        raise HTTPException(400, "Use a GitHub repo like https://github.com/owner/repo")
+    owner, repo = m.groups()
+
+    spec, source = body.spec.strip(), "pasted spec"
+    if not spec:
+        spec, source = _readme(owner, repo), "README.md"
+        if not spec.strip():
+            raise HTTPException(400, "No spec pasted and the repo has no README. Paste the spec or feature list.")
+
+    # 1) start fresh
+    with db.conn() as c:
+        for t in ("verdicts", "overrides", "pr_tickets", "verdict_extras", "pr_meta", "fix_feedback", "ticket_meta"):
+            c.execute(f"DELETE FROM {t}")
+        c.execute("DELETE FROM requirements")
+        c.execute("DELETE FROM tickets")
+        c.execute("DELETE FROM project")
+        c.execute("INSERT INTO project(id, name, repo, spec_source, sector, status, progress) VALUES (1, ?, ?, ?, ?, ?, ?)",
+                  (body.name or repo, f"{owner}/{repo}", source, body.sector, "loading", json.dumps({"step": "spec"})))
+
+    # 2) spec -> requirements (Shreenidhi's splitter)
+    try:
+        reqs = engine.split_requirements(spec[:20000]).get("requirements", [])
+    except Exception as e:
+        _set_progress("error", step="spec", error=str(e))
+        raise HTTPException(502, f"Could not split the spec into requirements: {e}")
+    reqs = [{"req_id": r.get("req_id") or f"REQ-{i+1:03d}", "text": r.get("requirement") or r.get("text") or ""} for i, r in enumerate(reqs)]
+    reqs = [r for r in reqs if r["text"].strip()]
+
+    # 3) GitHub issues -> tickets
+    _set_progress("loading", step="issues", requirements=len(reqs))
+    try:
+        raw_issues = _gh_json(f"/repos/{owner}/{repo}/issues", {"state": "all", "per_page": 100})
+        raw_prs = _gh_json(f"/repos/{owner}/{repo}/pulls", {"state": "all", "per_page": max(1, min(body.max_prs, 30)), "sort": "updated", "direction": "desc"})
+    except requests.HTTPError as e:
+        _set_progress("error", step="issues", error=str(e))
+        raise HTTPException(502, f"GitHub API error (is the repo public and GITHUB_TOKEN set?): {e}")
+    issues = [{"key": f"#{i['number']}", "title": i["title"], "body": i.get("body") or "", "url": i["html_url"], "state": i["state"]}
+              for i in raw_issues if "pull_request" not in i]
+
+    # 4) match requirements to issues (Nemotron Lightning)
+    _set_progress("loading", step="matching", requirements=len(reqs), tickets=len(issues))
+    matches = engine.match_requirements(reqs, issues)
+    with db.conn() as c:
+        for i in issues:
+            c.execute("INSERT INTO tickets(id, title, body) VALUES (?, ?, ?)", (i["key"], i["title"], i["body"][:4000]))
+            c.execute("INSERT OR REPLACE INTO ticket_meta(id, url, state) VALUES (?, ?, ?)", (i["key"], i["url"], i["state"]))
+        for r in reqs:
+            c.execute("INSERT INTO requirements(req_id, text, ticket_id, sector) VALUES (?, ?, ?, ?)",
+                      (r["req_id"], r["text"], matches.get(r["req_id"]), body.sector))
+
+    # 5) check the PRs in the background, then keep watching open ones
+    issue_keys = {i["key"] for i in issues}
+    _set_progress("checking", step="prs", done=0, total=len(raw_prs))
+    threading.Thread(target=_check_prs_in_background, args=(owner, repo, raw_prs, issue_keys), daemon=True).start()
+
+    linked = sum(1 for r in reqs if matches.get(r["req_id"]))
+    return {"project": body.name or repo, "repo": f"{owner}/{repo}", "spec_source": source,
+            "requirements": len(reqs), "tickets": len(issues), "linked_requirements": linked,
+            "lost": len(reqs) - linked, "prs_to_check": len(raw_prs)}
+
+
+@router.get("/projects/current")
+def current_project():
+    p = _project()
+    if not p:
+        raise HTTPException(404, "No project loaded yet.")
+    p["progress"] = json.loads(p.get("progress") or "{}")
+    return p

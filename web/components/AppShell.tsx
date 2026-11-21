@@ -1,7 +1,6 @@
 import Link from "next/link";
 import SectorSelect from "./SectorSelect";
 import Assistant from "./Assistant";
-import Tour, { LiveDemoButton } from "./Tour";
 
 // Minimal top bar, no sidebar. The overview page is the hub; everything else
 // is one click away from its cards.
@@ -15,7 +14,7 @@ export default function AppShell({ children, mock }: { children: React.ReactNode
               Δ0
             </span>
             <span className="hidden text-base font-semibold tracking-tight text-slate-100 min-[380px]:inline">DeltaZero</span>
-            <span className="ml-2 hidden text-xs text-slate-500 lg:inline">CareSlot · powered by NVIDIA Nemotron</span>
+            <span className="ml-2 hidden text-xs text-slate-500 lg:inline">Powered by NVIDIA Nemotron</span>
             {mock && (
               <span className="ml-1 hidden rounded-full border sm:inline border-amber-300/20 bg-amber-300/10 px-2 py-0.5 text-[10px] font-medium text-amber-200">
                 mock data
@@ -23,14 +22,18 @@ export default function AppShell({ children, mock }: { children: React.ReactNode
             )}
           </Link>
           <div className="flex items-center gap-2 sm:gap-3">
-            <LiveDemoButton />
+            <Link
+              href="/project/new"
+              className="whitespace-nowrap rounded-md border border-cyan-300/40 bg-cyan-400/10 px-2.5 py-1.5 text-xs font-medium text-cyan-100 transition hover:bg-cyan-400/20 sm:text-sm"
+            >
+              + Load project
+            </Link>
             <SectorSelect />
           </div>
         </div>
       </header>
       <main className="mx-auto max-w-6xl px-4 pb-24 pt-6 sm:px-6 sm:pt-8">{children}</main>
       <Assistant />
-      <Tour />
     </div>
   );
 }

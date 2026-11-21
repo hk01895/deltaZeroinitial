@@ -140,3 +140,30 @@ export interface OverrideRequest {
   reason: string;
   author: string;
 }
+
+export interface ProjectLoadRequest {
+  name?: string;
+  repo_url: string;
+  spec: string; // empty = use the repo's README
+  sector: Sector;
+}
+
+export interface ProjectLoadResult {
+  project: string;
+  repo: string;
+  spec_source: string;
+  requirements: number;
+  tickets: number;
+  linked_requirements: number;
+  lost: number;
+  prs_to_check: number;
+}
+
+export interface ProjectStatus {
+  name: string;
+  repo: string;
+  spec_source: string;
+  sector: Sector;
+  status: "loading" | "checking" | "ready" | "error";
+  progress: { step?: string; done?: number; total?: number; current?: string; checked?: number; skipped?: number[]; error?: string };
+}
