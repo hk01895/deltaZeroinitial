@@ -55,7 +55,7 @@ llm_shim.chat = lambda m, **k: json.dumps({"sub_scores": {"measurable": 0, "spec
     "issues": [], "rewrite": "x", "acceptance_criteria": []})
 sharpener.llm.chat = llm_shim.chat
 r = sharpener.sharpen_ticket("Make login faster")
-assert r["score"] > 0 and r.get("score_note"), r
+assert r["score"] > 0 and r.get("score_note") and r["sub_scores"] is None, r
 print("zero-score guard OK:", r["score"])
 llm_shim.chat = _orig
 sharpener.llm.chat = _orig

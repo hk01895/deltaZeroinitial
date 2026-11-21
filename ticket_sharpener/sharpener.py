@@ -117,10 +117,15 @@ def sharpen_ticket(ticket, sector=None, redundancy=None):
 
     result = {"model_used": "lightning", "fallback": False}
     try:
-        raw = llm.chat([{"role": "system", "content": SYSTEM}, {"role": "user", "content": user_msg}],
-                       thinking=False, max_tokens=1400)
-        data = parse_json(raw)
-        subs = {k: max(0, min(25, int(data["sub_scores"].get(k, 0)))) for k in ("measurable", "specific", "testable", "complete")}
+        data, subs = None, None
+        for attempt in range(2):  # the model sometimes echoes zero scores: retry once with a nudge
+            msg = user_msg if attempt == 0 else user_msg + "\n\nIMPORTANT: sub_scores must be realistic integers, NOT all zeros."
+            raw = llm.chat([{"role": "system", "content": SYSTEM}, {"role": "user", "content": msg}],
+                           thinking=False, max_tokens=1400, temperature=0.2 if attempt == 0 else 0.5)
+            data = parse_json(raw)
+            subs = {k: max(0, min(25, int(data["sub_scores"].get(k, 0)))) for k in ("measurable", "specific", "testable", "complete")}
+            if sum(subs.values()) > 0:
+                break
         score = sum(subs.values())
         # Merge: model issues first, then any lint issue the model did not already cover.
         issues = list(data.get("issues", []))
@@ -132,8 +137,9 @@ def sharpen_ticket(ticket, sector=None, redundancy=None):
                     issues.append(li)
             elif li["text"].lower() not in covered:
                 issues.append(li)
-        if score == 0 and issues:  # model echoed a zero template: a ticket with problems is vague, not "0 out of 100"
+        if score == 0:  # still zeros after the retry: use the rule-based score and hide the (meaningless) bars
             score = heuristic_score(issues)
+            subs = None
             result["score_note"] = "Model returned zero sub-scores; used rule-based score."
         result.update(sub_scores=subs, rewrite=data.get("rewrite", ""),
                       acceptance_criteria=data.get("acceptance_criteria", []), latency_s=round(getattr(llm.chat, "last_latency", 0), 2))
