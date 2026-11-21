@@ -34,7 +34,7 @@ export default function EvalPage() {
         </p>
       </div>
 
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+      <div data-tour="eval" className="grid grid-cols-1 gap-4 md:grid-cols-3">
         <StatCard label="Precision" value={pct(data.precision)} sub="When we flag a gap, how often it's real" tone="cyan" />
         <StatCard label="Recall" value={pct(data.recall)} sub="Share of real gaps we catch" tone="emerald" />
         <StatCard label="False-positive rate" value={pct(data.false_positive_rate)} sub="Done work wrongly flagged as a gap" tone="rose" />

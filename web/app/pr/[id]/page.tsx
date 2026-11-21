@@ -28,7 +28,11 @@ export default function PRReviewPage() {
       .catch((e) => setError(String(e)));
   }, [prId, sector]);
 
-  useEffect(load, [load]);
+  useEffect(() => {
+    load();
+    window.addEventListener("dz:refresh", load);
+    return () => window.removeEventListener("dz:refresh", load);
+  }, [load]);
 
   const rerun = async () => {
     setRunning(true);
@@ -89,7 +93,7 @@ export default function PRReviewPage() {
             <span className="font-mono text-slate-400">{review.head_sha.slice(0, 7)}</span>
           </div>
         </div>
-        <button onClick={rerun} disabled={running} className={btnPrimary}>
+        <button data-tour="rerun" onClick={rerun} disabled={running} className={btnPrimary}>
           {running ? "Re-checking latest commit…" : "↻ Re-run check"}
         </button>
       </div>
@@ -97,7 +101,7 @@ export default function PRReviewPage() {
       <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_320px]">
         <div className="min-w-0 space-y-4">
           {/* Score */}
-          <div className={`${card} ${done ? `border-emerald-400/30 ${glowStrong}` : glow} p-5`}>
+          <div data-tour="score" className={`${card} ${done ? `border-emerald-400/30 ${glowStrong}` : glow} p-5`}>
             <div className="flex flex-wrap items-end justify-between gap-3">
               <div>
                 <p className={eyebrow}>Requirements met</p>
@@ -140,7 +144,7 @@ export default function PRReviewPage() {
         {/* Side panel */}
         <div className="space-y-4">
           <RulePackPanel />
-          <div className={`${card} p-4`}>
+          <div data-tour="how" className={`${card} p-4`}>
             <p className={eyebrow}>How this was checked</p>
             <ul className="mt-3 space-y-2 text-sm text-slate-300">
               <li>

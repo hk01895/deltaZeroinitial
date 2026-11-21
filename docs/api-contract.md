@@ -94,3 +94,20 @@ Positive class for precision/recall = a **gap** (actual `partial` or `missing`).
 ```json
 { "sector": "medical", "name": "Medical / health data", "rules": [ { "id": "MED-1", "text": "..." } ] }
 ```
+
+## Ask Δ assistant (optional; UI falls back to a built-in mock brain)
+`POST /assistant` body `{ "message": "Change cancellations to 12 hours", "sector": "medical" }` returns:
+```json
+{
+  "reply": "Heads up, that conflicts with the spec.",
+  "pushback": {
+    "change": "Change cancellations to 12 hours",
+    "req_id": "REQ-004",
+    "rule": "The spec for REQ-004 says 24 hours...",
+    "suggestion": "Update the spec first, or keep the spec value."
+  },
+  "links": [ { "label": "Open PR #12", "href": "/pr/12" } ]
+}
+```
+`pushback` is `null` when the change is fine. `reply` supports `**bold**` and line breaks.
+`POST /assistant/changes` receives `{ change, req_id, decision: "applied" | "kept_spec" | "overridden", reason?, at }` so overrides can be fed back into prompts.

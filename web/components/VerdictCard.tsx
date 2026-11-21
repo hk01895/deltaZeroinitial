@@ -28,6 +28,7 @@ export default function VerdictCard({
 
   return (
     <div
+      data-tour="verdict"
       className={`${card} relative overflow-hidden p-4 pl-5 sm:p-5 sm:pl-6 before:absolute before:inset-y-0 before:left-0 before:w-[3px] before:opacity-80 ${ACCENT[v.verdict]}`}
     >
       {/* Header */}
@@ -66,7 +67,7 @@ export default function VerdictCard({
 
       {/* Evidence Guard */}
       {v.downgraded_from && (
-        <div className="mt-3 rounded-lg border border-sky-400/25 bg-sky-400/[0.06] px-3 py-2 text-sm text-sky-100">
+        <div data-tour="guard" className="mt-3 rounded-lg border border-sky-400/25 bg-sky-400/[0.06] px-3 py-2 text-sm text-sky-100">
           <span className="font-semibold text-sky-300">Evidence Guard:</span> the model said &ldquo;{STATUS_LABEL[v.downgraded_from]}&rdquo;,
           but the code it quoted isn&rsquo;t in the diff. Downgraded to <span className="font-semibold">Needs human</span>.
         </div>
@@ -83,7 +84,7 @@ export default function VerdictCard({
 
       {/* Fix suggestions */}
       {hasFix && (
-        <details className="mt-3 rounded-lg border border-navy-700" open={v.verdict !== "met"}>
+        <details data-tour="fix" className="mt-3 rounded-lg border border-navy-700" open={v.verdict !== "met"}>
           <summary className="cursor-pointer select-none px-3 py-2 text-sm font-medium text-slate-300 hover:text-cyan-100">
             Suggested fix {v.suggested_diff && "· diff"} {v.suggested_test && "· test"}
           </summary>
@@ -125,7 +126,7 @@ export default function VerdictCard({
         />
       ) : (
         <div className="mt-3 flex justify-end">
-          <button onClick={() => setShowOverride(true)} className={btnGhost}>
+          <button data-tour="override" onClick={() => setShowOverride(true)} className={btnGhost}>
             Override
           </button>
         </div>

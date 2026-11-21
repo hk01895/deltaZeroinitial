@@ -1,5 +1,7 @@
 import Link from "next/link";
 import SectorSelect from "./SectorSelect";
+import Assistant from "./Assistant";
+import Tour, { LiveDemoButton } from "./Tour";
 
 // Minimal top bar, no sidebar. The overview page is the hub; everything else
 // is one click away from its cards.
@@ -20,10 +22,15 @@ export default function AppShell({ children, mock }: { children: React.ReactNode
               </span>
             )}
           </Link>
-          <SectorSelect />
+          <div className="flex items-center gap-2 sm:gap-3">
+            <LiveDemoButton />
+            <SectorSelect />
+          </div>
         </div>
       </header>
-      <main className="mx-auto max-w-6xl px-4 py-6 sm:px-6 sm:py-8">{children}</main>
+      <main className="mx-auto max-w-6xl px-4 pb-24 pt-6 sm:px-6 sm:pt-8">{children}</main>
+      <Assistant />
+      <Tour />
     </div>
   );
 }

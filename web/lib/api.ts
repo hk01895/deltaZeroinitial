@@ -6,6 +6,7 @@ import {
   mockCoverage,
   mockEval,
   mockFinishSprint,
+  mockResetDemo,
   mockPRReview,
   mockPRs,
   mockRerun,
@@ -61,6 +62,11 @@ function applyMockOverrides(review: PRReview): PRReview {
 }
 
 // ---- Endpoints ------------------------------------------------------------
+
+/** Demo-only (mock mode): put the demo back to the start (PR #12 at 2/5, Δ 6). */
+export function resetDemo() {
+  if (USING_MOCK) mockResetDemo();
+}
 
 /** Demo-only (mock mode): mark every remaining requirement shipped so the Δ reaches 0. */
 export function finishDemoSprint() {

@@ -26,6 +26,7 @@ function SharpenerInner() {
         </p>
       )}
       <textarea
+        data-tour="sharpener"
         defaultValue={text}
         rows={8}
         placeholder="e.g. Make cancellations work and handle errors."

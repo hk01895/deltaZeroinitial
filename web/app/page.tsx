@@ -43,6 +43,8 @@ export default function Overview() {
   useEffect(() => {
     load();
     getEval().then(setEv);
+    window.addEventListener("dz:refresh", load);
+    return () => window.removeEventListener("dz:refresh", load);
   }, [load]);
 
   const counts = useMemo(() => {
@@ -94,6 +96,7 @@ export default function Overview() {
           The delta · <span className="font-mono normal-case tracking-normal text-slate-500">{cov.spec_name}</span>
         </p>
         <h1
+          data-tour="delta"
           onClick={() => zero && setBurst((b) => b + 1)}
           title={zero ? "Celebrate again" : undefined}
           className={`relative mt-2 flex items-baseline gap-3 font-semibold leading-none tabular-nums tracking-tight sm:gap-4 ${zero ? "cursor-pointer" : ""} ${
@@ -130,7 +133,7 @@ export default function Overview() {
           )}
         </p>
 
-        <div className="relative mt-6 w-full max-w-2xl">
+        <div className="relative mt-6 w-full max-w-2xl" data-tour="bar">
           <div className="flex h-2 gap-0.5 overflow-hidden rounded-full bg-navy-800">
             {BAR_ORDER.map((s) => {
               const w = total ? (counts[s] / total) * 100 : 0;
@@ -149,6 +152,7 @@ export default function Overview() {
           </div>
           {USING_MOCK && !zero && (
             <button
+              data-tour="sprint"
               onClick={() => {
                 finishDemoSprint();
                 load();
@@ -164,7 +168,7 @@ export default function Overview() {
       {/* ---------- Bento ---------- */}
       <section className="grid grid-cols-1 gap-4 md:grid-cols-3 [&>*]:min-w-0">
         {/* Lost requirements */}
-        <div className={`${card} relative overflow-hidden p-5 ${lost.length ? "border-orange-400/30" : ""}`}>
+        <div data-tour="lost" className={`${card} relative overflow-hidden p-5 ${lost.length ? "border-orange-400/30" : ""}`}>
           {lost.length > 0 && <div className="pointer-events-none absolute -right-10 -top-10 h-32 w-32 rounded-full bg-orange-400/10 blur-2xl" />}
           <p className={eyebrow}>Lost requirements</p>
           <p className={`mt-1 text-4xl font-semibold tabular-nums ${lost.length ? "text-orange-200" : "text-emerald-300"}`}>
@@ -190,7 +194,7 @@ export default function Overview() {
         </div>
 
         {/* Pull requests */}
-        <div className={`${card} p-5`}>
+        <div data-tour="prs" className={`${card} p-5`}>
           <div className="flex items-baseline justify-between">
             <p className={eyebrow}>Pull requests</p>
             <Link href="/pr" className={`text-xs ${link}`}>
@@ -265,7 +269,7 @@ export default function Overview() {
       )}
 
       {/* ---------- Requirement map ---------- */}
-      <section aria-labelledby="req-map-title">
+      <section aria-labelledby="req-map-title" data-tour="map">
         <div className="mb-5">
           <h2 id="req-map-title" className="text-lg font-semibold tracking-tight text-slate-50">
             Requirement map

@@ -20,7 +20,7 @@ export default function RulePackPanel() {
 
   if (!pack) return null;
   return (
-    <div className={`${card} p-4`}>
+    <div data-tour="rules" className={`${card} p-4`}>
       <p className={eyebrow}>Active rule pack</p>
       <p className="mt-1 font-medium text-cyan-100">{pack.name}</p>
       <ul className="mt-3 space-y-2">
