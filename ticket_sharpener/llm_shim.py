@@ -22,7 +22,8 @@ LIGHTNING = "nvidia/nemotron-3.5-lightning-30b-a3b"
 SUPER = "nvidia/nemotron-3.5-super-vl-120b-a12b"
 FAST = os.getenv("NEMOTRON_FAST_MODEL", LIGHTNING)
 DEEP = os.getenv("NEMOTRON_DEEP_MODEL", SUPER)
-EMBED = os.getenv("NEMOTRON_EMBED_MODEL", "nvidia/llama-3.2-nv-embedqa-1b-v2")
+# llama-3.2-nv-embedqa-1b-v2 reached end of life (HTTP 410). Fallback if this one is retired too: nvidia/nemotron-3.5-embed-1b
+EMBED = os.getenv("NEMOTRON_EMBED_MODEL", "nvidia/nemotron-3-embed-1b")
 
 
 def _post(path: str, payload: dict, timeout: int = 90) -> dict:
@@ -68,7 +69,6 @@ def embed(texts, kind="passage", batch=32):
             "input": texts[i:i + batch],
             "input_type": kind,
             "encoding_format": "float",
-            "truncate": "END",
         })
         vecs.extend(d["embedding"] for d in sorted(out["data"], key=lambda d: d["index"]))
     return vecs
