@@ -1,116 +1,122 @@
 # Δ0 DeltaZero
-
 **No difference between what you promised and what you shipped.**
 
-Teams set dozens of requirements at the start of a project, and some quietly never get built. Nobody notices until QA, a customer, or an auditor does.
-DeltaZero traces every original requirement from **spec → ticket → pull request → code** and shows the gap (the Δ). Its AI, powered by **NVIDIA Nemotron**, checks each PR against each requirement and pushes the Δ toward zero.
+DeltaZero is an AI-powered requirements tracker for software teams. It traces every requirement from the original spec to the ticket, the pull request and the code, shows how many promises are still unkept (the **Δ**), and helps the team drive it to zero.
 
----
+Powered by **NVIDIA Nemotron**: Lightning for fast checks, Super for the hard ones.
 
-## What it does
+Built for the **Best Use of NVIDIA Nemotron** hackathon track.
 
-| | Feature | What it means |
+## 💡 The problem
+Teams set dozens of requirements at the start of a project, and some quietly never get built. A requirement that never became a ticket, a PR that only does half the job, a "12 hours" that was supposed to be "24 hours": nobody notices until QA, a customer or an auditor does.
+
+Today's AI code reviewers check a pull request against its ticket. None of them check the **original promise**, so a requirement that was never ticketed is invisible to them.
+
+## 🌟 Features
+- **The Δ meter:** one number, how many promises aren't kept yet. It counts down live and celebrates at Δ 0.
+- **Lost requirements:** finds requirements that are in the spec but never became a ticket. One click drafts a precise ticket for them.
+- **Ticket Sharpener:** scores how precise a ticket is (0–100), flags vague words, checks if the code already does it, and rewrites it. It never invents numbers.
+- **PR Verifier:** every requirement on the linked ticket gets **Met, Not met or Check needed**, with a confidence score, the exact code as proof, a suggested fix and a test.
+- **Evidence Guard:** the AI has to quote lines that really exist in the code. If it can't, a person checks instead.
+- **Fast/deep thinking:** Nemotron 3.5 Lightning (thinking off) checks first. Only unsure or high-stakes cases go to Nemotron 3.5 Super (thinking on).
+- **Human override + learning:** override any verdict with a reason. Recent overrides become examples in the next prompt.
+- **"Not the fix you want?":** tell the AI what you want instead and it rewrites the fix.
+- **Rule packs:** medical and finance rules (audit logs, encryption, idempotency…) added to every check.
+- **Ask Δ:** chat with DeltaZero. "What's left?", "Are we ready to ship?", "Change X". It pushes back on risky changes, and you can still override with a reason.
+- **Auto-check on every push:** paste a PR link once and DeltaZero re-checks it each time new code is pushed.
+- **Eval on real projects:** 30 labeled cases built from real GitHub issues and pull requests, with precision, recall and false-positive rate.
+- **Accessibility first:** three status colors only, every status spelled out in words, high contrast, keyboard focus, screen-reader labels, and works on phones.
+- **Live demo:** a guided 19-step tour of every feature, in plain English.
+
+## 🛠️ Tech stack
+| Part | Technology | Purpose |
 |---|---|---|
-| Δ | **Delta meter** | One number: promises not kept yet. Counts down live; celebrates at Δ 0. |
-| ✕ | **Lost requirements** | Requirements in the spec that never became a ticket. PR-level tools can't see these. One click drafts a precise ticket. |
-| ✎ | **Ticket Sharpener** | Scores a ticket's precision (0–100), flags vague words, checks if the code already does it, rewrites it. Never invents numbers. |
-| ⇄ | **PR Verifier** | Every requirement on the linked ticket gets **Met / Not met / Check needed**, with a confidence score, the exact code as evidence, a suggested fix and a test. |
-| 🛡 | **Evidence Guard** | The AI must quote lines that really exist in the diff. If it can't, the verdict becomes *Check needed*. |
-| ⚡ | **Fast/deep router** | Nemotron 3.5 **Lightning** (thinking off) checks first; unsure or high-stakes cases escalate to Nemotron 3.5 **Super** (thinking on). |
-| ↯ | **Human override + learning** | Override any verdict with a reason; recent overrides are fed back into the prompt as examples. |
-| ↻ | **"Not the fix you want?"** | Tell the AI what you want instead and it rewrites the fix. |
-| 🏥 | **Rule packs** | Medical and finance rules (audit logging, encryption, idempotency…) added to every check. |
-| Δ | **Ask Δ** | Chat: "what's left?", "are we ready to ship?", "change X". Pushes back on risky changes; you can override with a reason. |
-| ◎ | **Eval** | 30 labeled cases built from real GitHub issue + PR pairs; precision, recall, false-positive rate. |
-| ▶ | **Live demo** | A guided 19-step tour of every feature, in plain English. |
+| AI | NVIDIA Nemotron 3.5 Lightning + 3.5 Super | Checking code against requirements, splitting specs, rewriting fixes and tickets |
+| Embeddings | NVIDIA Nemotron embeddings | "Does the code already do this?" redundancy check |
+| Backend | Python + FastAPI | API, verification runs, overrides, PR watching |
+| Database | SQLite | Requirements, tickets, verdicts, overrides |
+| Code access | GitHub REST API | Read pull requests and diffs, optional PR comments |
+| Frontend | Next.js + TypeScript | Dashboard |
+| Styling | Tailwind CSS | Dark navy theme, accessible layouts |
+| Version control | Git + GitHub | Share code with the team |
 
-## How it works
+## ⚙️ How it works
+1. **Spec in:** Nemotron Super splits the spec into requirements: REQ-001, REQ-002, …
+2. **Tickets:** each ticket goes through the Ticket Sharpener before work starts. Requirements with no ticket show up as **Lost**.
+3. **Pull request:** a developer opens a PR with the ticket key in the branch name (like `CARE-12-booking`). DeltaZero links it to the ticket automatically.
+4. **Check:** for every requirement on that ticket, Nemotron Lightning reads the diff and decides Met / Not met / Check needed. If it isn't sure, or the requirement is high-stakes, Nemotron Super thinks it through.
+5. **Evidence Guard:** the quoted code is checked against the real diff. No proof means a person checks.
+6. **Humans stay in charge:** overrides and "rewrite this fix" feedback are saved and fed into future checks.
+7. **Every push is re-checked**, and the Δ on the dashboard updates.
 
-```
-1. Spec ──► requirements (REQ-001…N)            ai_engine: Nemotron Super splits the spec
-2. Ticket ──► Ticket Sharpener                   ticket_sharpener: score, rewrite, redundancy check
-3. Dev opens a PR (branch like CARE-12-booking)
-4. DeltaZero links the PR to its ticket, fetches the diff from GitHub,
-   checks every requirement:  Lightning ─(unsure?)─► Super  ─► Evidence Guard
-5. Results: dashboard + (optional) PR comment; every new push is re-checked automatically
-6. Reviewer overrides / asks for a different fix ─► the AI learns from it
-7. Dashboard: Δ, lost requirements, requirement map, eval
-```
+GitHub access is **read-only for code**. DeltaZero reads pull requests and can post a comment. It never changes or merges code.
 
-GitHub access is **read-only for code**. DeltaZero reads PRs and diffs, and can post a comment. It never changes or merges code.
+## 🚀 Getting started
+**You need:** Python 3.11+, Node 18+, a free NVIDIA API key from [build.nvidia.com](https://build.nvidia.com), and a GitHub token.
 
-## Repo layout
-
-| Folder | Owner | What |
-|---|---|---|
-| `ai_engine/` | Shreenidhi (A) | `engine.py`: Nemotron calls, review prompt, Lightning→Super router, Evidence Guard, spec splitter, learning from corrections, fix regeneration. `deltazero_colab.py` is the original notebook. |
-| `backend/` | Shreya (B) | FastAPI + SQLite. GitHub PR fetch, verification runs, overrides, coverage, PR watching. `ui_api.py` adapts it for the dashboard (`/ui/*`). `seed_demo.py` loads the demo project. |
-| `web/` | Haasika (C) | Next.js + Tailwind dashboard: Δ meter, requirement map, PR review, override, eval, Ask Δ, live demo tour. |
-| `ticket_sharpener/` | Nimalan (D) | Ticket Sharpener, redundancy check (Nemotron embeddings), medical/finance rule packs. |
-| `eval/` | Team | Build 30 cases from real GitHub projects and score the verifier. |
-| `docs/` | Team | `api-contract.md`: every endpoint and JSON shape. |
-
-## Run it
-
-**Prerequisites:** Python 3.11+, Node 18+, an NVIDIA API key from [build.nvidia.com](https://build.nvidia.com) (free), a GitHub token.
-
+**1. Backend**
 ```bash
-# 1) Backend
 cd backend
 python3 -m venv .venv && source .venv/bin/activate
 pip install -r requirements.txt
 cp .env.example .env          # add NVIDIA_API_KEY and GITHUB_TOKEN
-python3 seed_demo.py --reset  # loads the CareSlot demo project (10 requirements, 2 of them lost)
+python3 seed_demo.py --reset  # loads the CareSlot demo project
 uvicorn main:app --reload --port 8000
-#    API docs: http://localhost:8000/docs
+```
+API docs: http://localhost:8000/docs
 
-# 2) Dashboard (new terminal)
+**2. Dashboard** (new terminal)
+```bash
 cd web
 npm install
-cp .env.local.example .env.local   # NEXT_PUBLIC_API_URL=http://localhost:8000/ui
-npm run dev                         # http://localhost:3000
+cp .env.local.example .env.local
+npm run dev
 ```
+Then open http://localhost:3000.
 
-Then paste a GitHub PR link into **"Check a pull request"**. Put the ticket key in the branch name (e.g. `CARE-12-booking`) and it's linked automatically. DeltaZero keeps watching that PR and re-checks every push.
+**3. Check a pull request:** paste a GitHub PR link into "Check a pull request" on the home page.
 
-**No API key / no internet?**
-- Backend: set `DELTAZERO_FAKE_LLM=1` in `backend/.env` for deterministic offline answers.
-- Dashboard: leave `NEXT_PUBLIC_API_URL` empty to run fully on built-in demo data. Good as a demo backup.
+**No API key yet?** Set `DELTAZERO_FAKE_LLM=1` in `backend/.env` to run the AI in offline demo mode. To run the dashboard on built-in demo data with no backend at all, leave `NEXT_PUBLIC_API_URL` empty in `web/.env.local`.
 
 **Your own spec instead of the demo:**
 ```bash
 curl -X POST localhost:8000/ui/spec -H 'content-type: application/json' \
-     -d '{"text": "- Users can reset passwords by email\n- Admins can export reports as CSV", "sector": "general"}'
+     -d '{"text": "- Users can reset passwords by email\n- Admins can export reports as CSV"}'
 ```
 
-## Eval on real projects
-
+**Run the eval on real GitHub projects:**
 ```bash
 export GITHUB_TOKEN=$(gh auth token)
-python3 eval/build_cases.py --n 10                     # 10 real merged PRs that close an issue → 30 cases
-python3 eval/run_eval.py --api http://localhost:8000/ui # → eval/results/eval.json (shown on the Eval page)
+python3 eval/build_cases.py --n 10
+python3 eval/run_eval.py
 ```
-See [`eval/README.md`](eval/README.md) for how the labels are built.
+Details: [`eval/README.md`](eval/README.md). Every endpoint and JSON shape: [`docs/api-contract.md`](docs/api-contract.md).
 
-## Main endpoints
+## 📁 Project layout
+| Folder | What's inside |
+|---|---|
+| `ai_engine/` | Nemotron calls, review prompt, Lightning → Super router, Evidence Guard, spec splitter, learning from corrections |
+| `backend/` | FastAPI + SQLite, GitHub integration, PR watching, dashboard API (`/ui/*`), demo seed |
+| `ticket_sharpener/` | Ticket Sharpener, redundancy check, medical and finance rule packs |
+| `web/` | Next.js dashboard |
+| `eval/` | Build test cases from real GitHub projects and score the verifier |
+| `docs/` | API contract |
 
-| Method | Path | Purpose |
-|---|---|---|
-| POST | `/ui/prs/check` | Paste a PR link: verify it, link its ticket, start watching for pushes |
-| GET | `/ui/coverage` | Every requirement with status: met / partial / missing / not started / never ticketed |
-| GET | `/ui/prs/{n}/review` · POST `/ui/prs/{n}/rerun` | Verdicts for a PR, or re-check its latest commit |
-| POST | `/ui/overrides` | Override a verdict (reason required) |
-| POST | `/ui/prs/{n}/fixes/{req}` | Rewrite a suggested fix from reviewer feedback |
-| POST | `/ui/tickets/draft` · `/ui/tickets` | Draft and create a ticket for a lost requirement |
-| POST | `/ui/sharpen` | Ticket Sharpener |
-| POST | `/ui/spec` | Split a spec into requirements |
-| POST | `/ui/verify` | Requirements + diff → verdicts (used by the eval) |
-| POST | `/verify`, `/watch` · GET `/results`, `/coverage` | Shreya's original backend endpoints (unchanged) |
+## 🌿 Branches
+- **main:** stable, demo-ready code
+- **integration:** AI engine + backend + Ticket Sharpener + dashboard combined (merge this into main)
+- **backend:** original FastAPI backend and GitHub integration
+- **backend-nemotron:** original Nemotron AI engine notebook (now `ai_engine/` on integration)
+- **person-d-sharpener:** original Ticket Sharpener work
 
-Full shapes: [`docs/api-contract.md`](docs/api-contract.md).
+## 🗺️ What's next
+- A GitHub App so every repo is checked automatically, no link needed
+- Two-way Jira sync for tickets and acceptance criteria
+- Fine-tuning Nemotron on each team's override history
+- Self-hosted deployment for hospitals, banks and other regulated teams
+- Traceability reports auditors can sign off on
 
-## Built with
-NVIDIA Nemotron 3.5 Lightning · Nemotron 3.5 Super · Nemotron embeddings · FastAPI · SQLite · GitHub REST API · Next.js · Tailwind CSS
+## 👥 Team
+Shreenidhi · Shreya · Haasika · Nimalan
 
-## Team
-Shreenidhi (AI engine) · Shreya (backend + GitHub) · Haasika (dashboard) · Nimalan (Ticket Sharpener + rule packs)
+Made with 💙 for the NVIDIA Nemotron hackathon track
