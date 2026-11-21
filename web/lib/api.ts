@@ -5,6 +5,7 @@
 import {
   mockCoverage,
   mockEval,
+  mockFinishSprint,
   mockPRReview,
   mockPRs,
   mockRerun,
@@ -60,6 +61,11 @@ function applyMockOverrides(review: PRReview): PRReview {
 }
 
 // ---- Endpoints ------------------------------------------------------------
+
+/** Demo-only (mock mode): mark every remaining requirement shipped so the Δ reaches 0. */
+export function finishDemoSprint() {
+  mockFinishSprint();
+}
 
 export function getCoverage(sector: Sector): Promise<Coverage> {
   return withFallback(

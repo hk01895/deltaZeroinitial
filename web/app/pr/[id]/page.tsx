@@ -72,10 +72,10 @@ export default function PRReviewPage() {
       {/* Header */}
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight text-slate-50">
+          <h1 className="text-xl font-semibold tracking-tight text-slate-50 sm:text-2xl">
             <span className="text-slate-500">#{review.pr_id}</span> {review.title}
           </h1>
-          <div className="mt-2 flex flex-wrap items-center gap-3 text-sm text-slate-500">
+          <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-slate-500">
             <a href={review.url} target="_blank" rel="noreferrer" className={link}>
               View on GitHub ↗
             </a>
@@ -94,15 +94,15 @@ export default function PRReviewPage() {
         </button>
       </div>
 
-      <div className="grid gap-6 lg:grid-cols-[1fr_320px]">
-        <div className="space-y-4">
+      <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_320px]">
+        <div className="min-w-0 space-y-4">
           {/* Score */}
           <div className={`${card} ${done ? `border-emerald-400/30 ${glowStrong}` : glow} p-5`}>
-            <div className="flex items-end justify-between">
+            <div className="flex flex-wrap items-end justify-between gap-3">
               <div>
                 <p className={eyebrow}>Requirements met</p>
                 <p
-                  className={`mt-1 text-6xl font-semibold tabular-nums ${
+                  className={`mt-1 text-5xl font-semibold tabular-nums sm:text-6xl ${
                     done
                       ? "text-emerald-200 [text-shadow:0_0_26px_rgba(52,211,153,0.45)]"
                       : "text-cyan-100 [text-shadow:0_0_22px_rgba(103,232,249,0.35)]"
@@ -112,7 +112,7 @@ export default function PRReviewPage() {
                   <span className="text-3xl text-slate-500">/{total}</span>
                 </p>
               </div>
-              <div className="flex flex-wrap justify-end gap-3 text-sm">
+              <div className="flex flex-wrap gap-x-3 gap-y-1 text-sm sm:justify-end">
                 {ORDER.filter((s) => counts[s] > 0).map((s) => (
                   <span key={s} className="text-slate-400">
                     <span className="font-semibold tabular-nums text-slate-200">{counts[s]}</span> {STATUS_LABEL[s].toLowerCase()}

@@ -28,10 +28,10 @@ export default function VerdictCard({
 
   return (
     <div
-      className={`${card} relative overflow-hidden p-5 pl-6 before:absolute before:inset-y-0 before:left-0 before:w-[3px] before:opacity-80 ${ACCENT[v.verdict]}`}
+      className={`${card} relative overflow-hidden p-4 pl-5 sm:p-5 sm:pl-6 before:absolute before:inset-y-0 before:left-0 before:w-[3px] before:opacity-80 ${ACCENT[v.verdict]}`}
     >
       {/* Header */}
-      <div className="flex flex-wrap items-start justify-between gap-3">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-2">
             <span className="font-mono text-sm font-semibold text-slate-200">{v.req_id}</span>
@@ -44,7 +44,7 @@ export default function VerdictCard({
           </div>
           <p className="mt-2 text-sm text-slate-100">{v.requirement}</p>
         </div>
-        <div className="flex shrink-0 flex-col items-end gap-1 text-xs text-slate-400">
+        <div className="flex shrink-0 flex-row flex-wrap items-center gap-2 text-xs text-slate-400 sm:flex-col sm:items-end sm:gap-1">
           <span>
             Confidence <span className="font-semibold tabular-nums text-slate-200">{Math.round(v.confidence * 100)}%</span>
           </span>

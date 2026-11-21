@@ -42,7 +42,7 @@ export default function EvalPage() {
 
       <div className="grid gap-6 lg:grid-cols-2">
         {/* Confusion matrix */}
-        <div className={`${card} p-5`}>
+        <div className={`${card} min-w-0 p-4 sm:p-5`}>
           <p className="text-sm font-semibold text-slate-100">Confusion matrix</p>
           <p className="text-xs text-slate-400">Rows = actual · columns = DeltaZero&rsquo;s verdict</p>
           <div className="mt-4 overflow-x-auto">
@@ -51,7 +51,7 @@ export default function EvalPage() {
                 <tr>
                   <th />
                   {data.labels.map((l) => (
-                    <th key={l} className="px-2 pb-2 text-xs font-medium text-slate-400">
+                    <th key={l} className="px-1 pb-2 text-[10px] font-medium leading-tight text-slate-400 sm:px-2 sm:text-xs">
                       {STATUS_LABEL[l]}
                     </th>
                   ))}
@@ -60,14 +60,14 @@ export default function EvalPage() {
               <tbody>
                 {data.confusion.map((row, i) => (
                   <tr key={i}>
-                    <th className="pr-3 text-right text-xs font-medium text-slate-400">{STATUS_LABEL[data.labels[i]]}</th>
+                    <th className="pr-2 text-right text-[10px] font-medium leading-tight text-slate-400 sm:pr-3 sm:text-xs">{STATUS_LABEL[data.labels[i]]}</th>
                     {row.map((n, j) => {
                       const diag = i === j;
                       const alpha = n / maxCell;
                       return (
                         <td key={j} className="p-1">
                           <div
-                            className="flex h-12 w-20 items-center justify-center rounded-md border font-semibold tabular-nums text-slate-100"
+                            className="flex h-10 w-12 items-center justify-center rounded-md border font-semibold tabular-nums text-slate-100 sm:h-12 sm:w-20"
                             style={{
                               backgroundColor: diag
                                 ? `rgba(52, 211, 153, ${0.06 + alpha * 0.32})`
@@ -89,7 +89,7 @@ export default function EvalPage() {
         </div>
 
         {/* Latency */}
-        <div className={`${card} p-5`}>
+        <div className={`${card} min-w-0 p-4 sm:p-5`}>
           <p className="text-sm font-semibold text-slate-100">Fast/deep thinking router</p>
           <p className="text-xs text-slate-400">
             {Math.round(latency.fast_share * 100)}% of checks resolved on the fast path ·{" "}

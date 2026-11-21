@@ -1,12 +1,13 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
-import { getCoverage, getEval, getPRs } from "@/lib/api";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { finishDemoSprint, getCoverage, getEval, getPRs, USING_MOCK } from "@/lib/api";
 import type { Coverage, CoverageRow, CoverageStatus, EvalResult, PRSummary } from "@/lib/types";
 import { useSector } from "@/components/SectorProvider";
 import StatusBadge, { STATUS_BAR, STATUS_LABEL } from "@/components/StatusBadge";
 import CountUp from "@/components/CountUp";
+import Celebration from "@/components/Celebration";
 import { card, eyebrow, link } from "@/lib/ui";
 
 type Filter = "all" | CoverageStatus;
@@ -29,6 +30,9 @@ const DOT_GLOW: Record<CoverageStatus, string> = {
   never_ticketed: "shadow-[0_0_10px_1px_rgba(251,146,60,0.65)]",
 };
 
+// Celebrate the first time we see Δ 0 in this session (click the Δ to replay).
+let celebratedThisSession = false;
+
 const pct = (x: number) => `${Math.round(x * 1000) / 10}%`;
 
 function tileHref(r: CoverageRow) {
@@ -44,21 +48,44 @@ export default function Overview() {
   const [ev, setEv] = useState<EvalResult | null>(null);
   const [filter, setFilter] = useState<Filter>("all");
 
-  useEffect(() => {
-    let alive = true;
-    getCoverage(sector).then((d) => alive && setCov(d));
-    getPRs().then((d) => alive && setPrs(d));
-    getEval().then((d) => alive && setEv(d));
-    return () => {
-      alive = false;
-    };
+  const [burst, setBurst] = useState(0);
+  const prevDelta = useRef<number | null>(null);
+
+  const load = useCallback(() => {
+    getCoverage(sector).then(setCov);
+    getPRs().then(setPrs);
   }, [sector]);
+
+  useEffect(() => {
+    load();
+    getEval().then(setEv);
+  }, [load]);
 
   const counts = useMemo(() => {
     const c: Record<CoverageStatus, number> = { met: 0, partial: 0, missing: 0, never_ticketed: 0, not_started: 0 };
     cov?.requirements.forEach((r) => c[r.status]++);
     return c;
   }, [cov]);
+
+  const deltaNow = cov ? cov.requirements.length - counts.met : null;
+
+  // Fire the celebration when the Δ lands on 0 (after the count-down animation).
+  useEffect(() => {
+    if (deltaNow === null) return;
+    const prev = prevDelta.current;
+    prevDelta.current = deltaNow;
+    if (deltaNow !== 0) return;
+    if (prev !== null && prev !== 0) {
+      const t = setTimeout(() => setBurst((b) => b + 1), 850);
+      celebratedThisSession = true;
+      return () => clearTimeout(t);
+    }
+    if (prev === null && !celebratedThisSession) {
+      celebratedThisSession = true;
+      const t = setTimeout(() => setBurst((b) => b + 1), 250);
+      return () => clearTimeout(t);
+    }
+  }, [deltaNow]);
 
   if (!cov) return <p className="py-24 text-center text-sm text-slate-400">Measuring the delta…</p>;
 
@@ -71,11 +98,12 @@ export default function Overview() {
   const speedup = ev && ev.latency.routed_avg_ms ? ev.latency.all_deep_avg_ms / ev.latency.routed_avg_ms : 0;
 
   return (
-    <div className="space-y-10">
+    <div className="space-y-8 sm:space-y-10">
       {/* ---------- Δ meter hero ---------- */}
-      <section className="relative flex flex-col items-center pt-6 text-center">
+      <Celebration fire={burst} />
+      <section className="relative flex flex-col items-center pt-2 text-center sm:pt-6">
         <div
-          className={`pointer-events-none absolute top-6 h-56 w-[36rem] rounded-full blur-3xl ${
+          className={`pointer-events-none absolute top-6 h-44 w-full max-w-[36rem] rounded-full blur-3xl sm:h-56 ${
             zero ? "bg-emerald-400/10" : "bg-cyan-400/[0.07]"
           }`}
         />
@@ -83,20 +111,33 @@ export default function Overview() {
           The delta · <span className="font-mono normal-case tracking-normal text-slate-500">{cov.spec_name}</span>
         </p>
         <h1
-          className={`relative mt-2 flex items-baseline gap-4 font-semibold leading-none tabular-nums tracking-tight ${
+          onClick={() => zero && setBurst((b) => b + 1)}
+          title={zero ? "Celebrate again" : undefined}
+          className={`relative mt-2 flex items-baseline gap-3 font-semibold leading-none tabular-nums tracking-tight sm:gap-4 ${zero ? "cursor-pointer" : ""} ${
             zero
               ? "text-emerald-200 [text-shadow:0_0_40px_rgba(52,211,153,0.45)]"
               : "text-cyan-50 [text-shadow:0_0_40px_rgba(103,232,249,0.35)]"
           }`}
         >
-          <span className={`text-6xl md:text-7xl ${zero ? "text-emerald-300/80" : "text-cyan-300/70"}`}>Δ</span>
-          <span className="text-[8rem] md:text-[10rem]">
+          {zero && (
+            <>
+              <span key={`r1-${burst}`} className="dz-ring pointer-events-none absolute left-1/2 top-1/2 -ml-28 -mt-28 h-56 w-56 rounded-full border border-emerald-300/40" />
+              <span key={`r2-${burst}`} className="dz-ring dz-ring-delay pointer-events-none absolute left-1/2 top-1/2 -ml-28 -mt-28 h-56 w-56 rounded-full border border-cyan-300/30" />
+            </>
+          )}
+          <span className={`text-5xl sm:text-6xl md:text-7xl ${zero ? "text-emerald-300/80" : "text-cyan-300/70"}`}>Δ</span>
+          <span className="text-[6.5rem] sm:text-[8rem] md:text-[10rem]">
             <CountUp value={delta} />
           </span>
         </h1>
-        <p className="relative mt-3 text-base text-slate-400">
+        <p className="relative mt-3 px-2 text-sm text-slate-400 sm:text-base">
           {zero ? (
-            <span className="text-emerald-300">Everything you promised, shipped.</span>
+            <span
+              key={`msg-${burst}`}
+              className="dz-pop inline-flex items-center gap-2 rounded-full border border-emerald-300/30 bg-emerald-400/10 px-4 py-1.5 font-medium text-emerald-200 shadow-[0_0_24px_-8px_rgba(52,211,153,0.7)]"
+            >
+              ✦ Zero delta. Everything you promised, shipped.
+            </span>
           ) : (
             <>
               promised <span className="font-semibold text-slate-100">{total}</span> · shipped{" "}
@@ -115,7 +156,7 @@ export default function Overview() {
               ) : null;
             })}
           </div>
-          <div className="mt-3 flex flex-wrap justify-center gap-x-5 gap-y-1 text-xs text-slate-400">
+          <div className="mt-3 flex flex-wrap justify-center gap-x-4 gap-y-1 text-xs text-slate-400 sm:gap-x-5">
             {BAR_ORDER.filter((s) => counts[s] > 0).map((s) => (
               <span key={s} className="flex items-center gap-1.5">
                 <span className={`h-1.5 w-1.5 rounded-full ${STATUS_BAR[s]}`} />
@@ -123,11 +164,22 @@ export default function Overview() {
               </span>
             ))}
           </div>
+          {USING_MOCK && !zero && (
+            <button
+              onClick={() => {
+                finishDemoSprint();
+                load();
+              }}
+              className="mt-4 text-[11px] text-slate-500 underline decoration-dotted underline-offset-4 transition hover:text-cyan-200"
+            >
+              Demo: simulate next sprint shipping the rest →
+            </button>
+          )}
         </div>
       </section>
 
       {/* ---------- Bento ---------- */}
-      <section className="grid gap-4 md:grid-cols-3">
+      <section className="grid grid-cols-1 gap-4 md:grid-cols-3 [&>*]:min-w-0">
         {/* Lost requirements */}
         <div className={`${card} relative overflow-hidden p-5 ${lost.length ? "border-orange-400/30" : ""}`}>
           {lost.length > 0 && <div className="pointer-events-none absolute -right-10 -top-10 h-32 w-32 rounded-full bg-orange-400/10 blur-2xl" />}
@@ -258,7 +310,7 @@ export default function Overview() {
           </div>
         </div>
 
-        <div className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-5">
+        <div className="grid grid-cols-1 gap-3 min-[420px]:grid-cols-2 md:grid-cols-3 lg:grid-cols-5">
           {tiles.map((r) => {
             const href = tileHref(r);
             const body = (
@@ -267,7 +319,7 @@ export default function Overview() {
                   <span className="font-mono text-[11px] font-semibold text-slate-400">{r.req_id}</span>
                   <span className={`h-2 w-2 rounded-full ${STATUS_BAR[r.status]} ${DOT_GLOW[r.status]}`} />
                 </div>
-                <p className="mt-2 line-clamp-3 min-h-[3.75rem] text-[13px] leading-5 text-slate-200">{r.text}</p>
+                <p className="mt-2 line-clamp-3 text-[13px] leading-5 text-slate-200 min-[420px]:min-h-[3.75rem]">{r.text}</p>
                 <div className="mt-3 flex items-center justify-between gap-2">
                   <StatusBadge status={r.status} />
                   <span className="truncate font-mono text-[10px] text-slate-500">

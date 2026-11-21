@@ -28,13 +28,13 @@ export default function PRListPage() {
           {prs.map((p) => {
             const done = p.met === p.total;
             return (
-              <Link key={p.pr_id} href={`/pr/${p.pr_id}`} className="flex items-center gap-4 px-5 py-4 transition hover:bg-navy-850/70">
+              <Link key={p.pr_id} href={`/pr/${p.pr_id}`} className="flex items-center gap-3 px-4 py-4 transition hover:bg-navy-850/70 sm:gap-4 sm:px-5">
                 <span className="font-mono text-sm text-slate-500">#{p.pr_id}</span>
                 <div className="min-w-0 flex-1">
                   <p className="truncate font-medium text-slate-100">{p.title}</p>
                   <p className="text-xs text-slate-500">{p.ticket_key}</p>
                 </div>
-                <div className="w-40">
+                <div className="hidden w-40 sm:block">
                   <div className="h-1.5 overflow-hidden rounded-full bg-navy-800">
                     <div
                       className={`h-full ${done ? "bg-emerald-400" : "bg-amber-300"}`}

@@ -197,12 +197,42 @@ export function mockRerun(id: number, sector: Sector): PRReview {
   return mockPRReview(id, sector);
 }
 
+// Demo-only: pretend the team shipped the last requirements so the Δ hits 0.
+let sprintDone = false;
+export function mockFinishSprint() {
+  pr12Fixed = true;
+  sprintDone = true;
+}
+
 export function mockResetDemo() {
   pr12Fixed = false;
+  sprintDone = false;
 }
 
 // Coverage reflects the demo state: once PR #12 is fixed, REQ-003..005 flip to met.
+const LATE: Record<string, { ticket_key: string; pr_id: number }> = {
+  "REQ-008": { ticket_key: "CARE-15", pr_id: 14 },
+  "REQ-009": { ticket_key: "CARE-16", pr_id: 14 },
+  "REQ-010": { ticket_key: "CARE-17", pr_id: 14 },
+};
+
 export function mockCoverage(): Coverage {
+  if (sprintDone) {
+    return {
+      ...baseCoverage,
+      requirements: baseCoverage.requirements.map((r) => {
+        const late = LATE[r.req_id];
+        return {
+          ...r,
+          status: "met",
+          drift: null,
+          ...(late
+            ? { ticket_key: late.ticket_key, ticket_url: `${JIRA}/${late.ticket_key}`, pr_id: late.pr_id, pr_url: `${REPO}/pull/${late.pr_id}` }
+            : {}),
+        };
+      }),
+    };
+  }
   if (!pr12Fixed) return baseCoverage;
   return {
     ...baseCoverage,
@@ -213,6 +243,9 @@ export function mockCoverage(): Coverage {
 }
 
 export const mockPRs = (): PRSummary[] => [
+  ...(sprintDone
+    ? [{ pr_id: 14, title: "SMS reminders, PDF export, encrypted phone numbers", ticket_key: "CARE-15", met: 3, total: 3, updated_at: "2026-11-21T17:40:00Z" }]
+    : []),
   { pr_id: 12, title: "Add appointment booking endpoint", ticket_key: "CARE-12", met: pr12Fixed ? 5 : 2, total: 5, updated_at: "2026-11-21T15:02:00Z" },
   { pr_id: 9, title: "Doctor weekly schedule view", ticket_key: "CARE-9", met: 1, total: 1, updated_at: "2026-11-20T21:40:00Z" },
   { pr_id: 7, title: "Session timeout", ticket_key: "CARE-7", met: 1, total: 1, updated_at: "2026-11-20T18:15:00Z" },
