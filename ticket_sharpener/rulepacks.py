@@ -13,12 +13,10 @@ def available_sectors():
 
 def load_pack(sector):
     """sector: 'medical' | 'finance' | None/'general' -> list of rule dicts ([] if none)."""
-    if not sector or sector == "general":
+    # Whitelist: the sector comes from an HTTP request, so never build a file path from it directly.
+    if not sector or sector not in available_sectors():
         return []
-    path = PACK_DIR / f"{sector}.yaml"
-    if not path.exists():
-        return []
-    return yaml.safe_load(path.read_text())["rules"]
+    return yaml.safe_load((PACK_DIR / f"{sector}.yaml").read_text())["rules"]
 
 
 def triggered_rules(sector, text):

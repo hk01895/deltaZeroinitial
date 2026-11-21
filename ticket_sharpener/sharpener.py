@@ -115,7 +115,13 @@ def sharpen_ticket(ticket, sector=None, redundancy=None):
         # Merge: model issues first, then any lint issue whose quoted text the model did not already cover.
         issues = list(data.get("issues", []))
         covered = " ".join(i.get("text", "").lower() for i in issues)
-        issues += [i for i in lint_issues if i["text"].lower() not in covered and not i["text"].startswith("(")]
+        have_types = {i.get("type") for i in issues}
+        for li in lint_issues:
+            if li["text"].startswith("("):  # "something is absent" issues: keep unless the model already flagged that type
+                if li["type"] not in have_types:
+                    issues.append(li)
+            elif li["text"].lower() not in covered:
+                issues.append(li)
         result.update(sub_scores=subs, rewrite=data.get("rewrite", ""),
                       acceptance_criteria=data.get("acceptance_criteria", []), latency_s=round(getattr(llm.chat, "last_latency", 0), 2))
     except Exception as e:

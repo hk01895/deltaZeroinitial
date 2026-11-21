@@ -34,6 +34,9 @@ assert any(r["id"] == "FIN-01" for r in rulepacks.triggered_rules("finance", "tr
 assert rulepacks.triggered_rules(None, "anything") == []
 print("rule packs OK")
 
+assert rulepacks.load_pack("../rulepacks/medical") == [] and rulepacks.load_pack("nope") == []  # no path traversal
+print("sector whitelist OK")
+
 # 2. lint catches the vague demo ticket
 issues = sharpener.lint("Make the login page faster and more user-friendly. It should handle a lot of users and be secure.")
 types = {i["type"] for i in issues}
@@ -43,6 +46,7 @@ print("lint OK:", [i["text"] for i in issues][:5])
 # 3. sharpen with fake model: score = sum of sub-scores, <think>/fences stripped
 r = sharpener.sharpen_ticket("Make login faster", sector=None)
 assert r["score"] == 15 and r["grade"] == "vague" and not r["fallback"] and r["rewrite"]
+assert any(i["type"] == "missing_number" for i in r["issues"]), r["issues"]  # lint gaps survive a successful model call
 print("sharpen OK: score", r["score"])
 
 # 4. model failure -> lint-only fallback, no crash

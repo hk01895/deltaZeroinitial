@@ -54,8 +54,9 @@ def index_repo(root, cache=True):
     except Exception as e:
         print(f"[redundancy] embeddings unavailable ({e}); using keyword fallback")
         vecs = None
-    if cache:
-        cache_path.write_text(json.dumps({"chunks": chunks, "vecs": vecs.tolist() if vecs is not None else None}))
+    # Only cache real embeddings; otherwise a failed first run would lock in keyword mode forever.
+    if cache and vecs is not None:
+        cache_path.write_text(json.dumps({"chunks": chunks, "vecs": vecs.tolist()}))
     return {"chunks": chunks, "vecs": vecs}
 
 

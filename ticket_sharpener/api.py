@@ -41,9 +41,13 @@ def sharpen(body: SharpenIn):
 
 @router.post("/api/reindex")
 def reindex():
+    """Call after new commits land in the demo repo so the redundancy check sees them."""
     global _index
     _index = None
-    return {"chunks": len(get_index()["chunks"]) if get_index() else 0}
+    path = os.getenv("REPO_PATH")
+    if path:
+        _index = redundancy.index_repo(path, cache=False)
+    return {"chunks": len(_index["chunks"]) if _index else 0}
 
 
 @router.get("/api/rulepacks")
