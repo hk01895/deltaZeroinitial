@@ -322,8 +322,11 @@ def match_requirements(requirements, issues) -> dict:
     prompt = f"""
     You are DeltaZero's ticket matcher.
 
-    For each REQUIREMENT, find the ONE ticket (GitHub issue) that asks for that work.
-    Only match when the ticket is clearly about the same behavior. If no ticket matches, use null.
+    For each REQUIREMENT, find the ONE ticket (GitHub issue) that explicitly asks for that exact behavior.
+    Be strict. A ticket on a related topic is NOT a match: the ticket's title or body must clearly describe
+    this specific behavior (for example, a "Booking" ticket does not cover rescheduling, and a
+    "Cancellations" ticket does not cover audit logging). If no ticket explicitly asks for it, use null.
+    Missing a match is far better than a wrong match: unmatched requirements are flagged as lost.
     Several requirements may match the same ticket.
 
     REQUIREMENTS:
