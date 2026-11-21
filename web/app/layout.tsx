@@ -18,13 +18,13 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           <div className="flex min-h-screen">
             <Sidebar />
             <div className="flex min-w-0 flex-1 flex-col">
-              <header className="flex items-center justify-between border-b border-slate-200 bg-white px-8 py-3">
-                <div className="flex items-center gap-2 text-sm text-slate-500">
-                  <span className="font-medium text-slate-700">CareSlot</span>
-                  <span>·</span>
+              <header className="flex items-center justify-between border-b border-navy-700/60 bg-navy-950/60 px-8 py-3 backdrop-blur">
+                <div className="flex items-center gap-2 text-sm text-slate-400">
+                  <span className="font-medium text-slate-200">CareSlot</span>
+                  <span className="text-slate-600">·</span>
                   <span>Powered by NVIDIA Nemotron</span>
                   {USING_MOCK && (
-                    <span className="ml-2 rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-800">
+                    <span className="ml-2 rounded-full border border-amber-300/20 bg-amber-300/10 px-2 py-0.5 text-xs font-medium text-amber-200">
                       mock data
                     </span>
                   )}

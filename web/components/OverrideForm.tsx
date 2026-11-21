@@ -4,6 +4,7 @@ import { useState } from "react";
 import { postOverride } from "@/lib/api";
 import type { Override, Verdict } from "@/lib/types";
 import { STATUS_LABEL } from "./StatusBadge";
+import { btnPrimary, input } from "@/lib/ui";
 
 const VERDICTS: Verdict[] = ["met", "partial", "missing", "needs_human"];
 const MIN_REASON = 10;
@@ -48,16 +49,12 @@ export default function OverrideForm({
   };
 
   return (
-    <form onSubmit={submit} className="mt-3 space-y-3 rounded-lg border border-indigo-200 bg-indigo-50/50 p-4">
-      <p className="text-sm font-medium text-indigo-900">Override AI verdict for {reqId}</p>
+    <form onSubmit={submit} className="mt-3 space-y-3 rounded-lg border border-cyan-300/20 bg-cyan-400/[0.04] p-4">
+      <p className="text-sm font-medium text-cyan-100">Override AI verdict for {reqId}</p>
       <div className="flex flex-wrap gap-3">
         <label className="text-sm">
-          <span className="mb-1 block text-xs text-slate-600">New verdict</span>
-          <select
-            value={verdict}
-            onChange={(e) => setVerdict(e.target.value as Verdict)}
-            className="rounded-md border border-slate-300 bg-white px-2 py-1.5 text-sm"
-          >
+          <span className="mb-1 block text-xs text-slate-400">New verdict</span>
+          <select value={verdict} onChange={(e) => setVerdict(e.target.value as Verdict)} className={input}>
             {VERDICTS.map((v) => (
               <option key={v} value={v} disabled={v === current}>
                 {STATUS_LABEL[v]}
@@ -67,36 +64,28 @@ export default function OverrideForm({
           </select>
         </label>
         <label className="text-sm">
-          <span className="mb-1 block text-xs text-slate-600">Your name</span>
-          <input
-            value={author}
-            onChange={(e) => setAuthor(e.target.value)}
-            className="rounded-md border border-slate-300 bg-white px-2 py-1.5 text-sm"
-          />
+          <span className="mb-1 block text-xs text-slate-400">Your name</span>
+          <input value={author} onChange={(e) => setAuthor(e.target.value)} className={input} />
         </label>
       </div>
       <label className="block text-sm">
-        <span className="mb-1 block text-xs text-slate-600">
-          Reason <span className="text-rose-600">*</span> (used to teach the AI on future runs)
+        <span className="mb-1 block text-xs text-slate-400">
+          Reason <span className="text-rose-300">*</span> (used to teach the AI on future runs)
         </span>
         <textarea
           value={reason}
           onChange={(e) => setReason(e.target.value)}
           rows={3}
           placeholder="e.g. Audit logging is handled by the API gateway, not in this service."
-          className="w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm"
+          className={`${input} w-full px-3 py-2 placeholder:text-slate-600`}
         />
       </label>
-      {error && <p className="text-sm text-rose-700">{error}</p>}
+      {error && <p className="text-sm text-rose-300">{error}</p>}
       <div className="flex gap-2">
-        <button
-          type="submit"
-          disabled={saving}
-          className="rounded-md bg-indigo-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-indigo-700 disabled:opacity-50"
-        >
+        <button type="submit" disabled={saving} className={btnPrimary}>
           {saving ? "Saving…" : "Save override"}
         </button>
-        <button type="button" onClick={onCancel} className="rounded-md px-3 py-1.5 text-sm text-slate-600 hover:bg-slate-100">
+        <button type="button" onClick={onCancel} className="rounded-md px-3 py-1.5 text-sm text-slate-400 hover:text-slate-200">
           Cancel
         </button>
       </div>

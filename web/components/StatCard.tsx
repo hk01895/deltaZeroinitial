@@ -1,3 +1,5 @@
+import { card, eyebrow } from "@/lib/ui";
+
 export default function StatCard({
   label,
   value,
@@ -7,21 +9,21 @@ export default function StatCard({
   label: string;
   value: string | number;
   sub?: string;
-  tone?: "slate" | "emerald" | "amber" | "rose" | "orange" | "indigo";
+  tone?: "slate" | "emerald" | "amber" | "rose" | "orange" | "cyan";
 }) {
   const toneCls: Record<string, string> = {
-    slate: "text-slate-900",
-    emerald: "text-emerald-600",
-    amber: "text-amber-600",
-    rose: "text-rose-600",
-    orange: "text-orange-600",
-    indigo: "text-indigo-600",
+    slate: "text-slate-100",
+    emerald: "text-emerald-300",
+    amber: "text-amber-200",
+    rose: "text-rose-300",
+    orange: "text-orange-300",
+    cyan: "text-cyan-200 [text-shadow:0_0_18px_rgba(103,232,249,0.35)]",
   };
   return (
-    <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-      <p className="text-xs font-medium uppercase tracking-wide text-slate-500">{label}</p>
+    <div className={`${card} p-4`}>
+      <p className={eyebrow}>{label}</p>
       <p className={`mt-1 text-3xl font-semibold tabular-nums ${toneCls[tone]}`}>{value}</p>
-      {sub && <p className="mt-1 text-xs text-slate-500">{sub}</p>}
+      {sub && <p className="mt-1 text-xs text-slate-400">{sub}</p>}
     </div>
   );
 }
