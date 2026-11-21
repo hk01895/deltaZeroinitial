@@ -5,13 +5,14 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { finishDemoSprint, getCoverage, getEval, getPRs, USING_MOCK } from "@/lib/api";
 import type { Coverage, CoverageRow, CoverageStatus, EvalResult, PRSummary } from "@/lib/types";
 import { useSector } from "@/components/SectorProvider";
-import { STATUS_BAR, STATUS_LABEL } from "@/components/StatusBadge";
+import { ColorKey, GROUP, GROUP_ORDER, TONE, groupCounts } from "@/components/StatusBadge";
+import CreateTicketModal from "@/components/CreateTicketModal";
+import PRLinkBox from "@/components/PRLinkBox";
 import CountUp from "@/components/CountUp";
 import RequirementMap from "@/components/RequirementMap";
 import Celebration from "@/components/Celebration";
 import { card, eyebrow, link } from "@/lib/ui";
 
-const BAR_ORDER: CoverageStatus[] = ["met", "partial", "missing", "not_started", "never_ticketed"];
 
 
 
@@ -52,6 +53,15 @@ export default function Overview() {
     cov?.requirements.forEach((r) => c[r.status]++);
     return c;
   }, [cov]);
+
+  const buckets = useMemo(() => groupCounts(cov?.requirements.map((r) => r.status) ?? []), [cov]);
+  const [creating, setCreating] = useState<CoverageRow | null>(null);
+  const [toast, setToast] = useState<string | null>(null);
+  useEffect(() => {
+    if (!toast) return;
+    const t = setTimeout(() => setToast(null), 4000);
+    return () => clearTimeout(t);
+  }, [toast]);
 
   const deltaNow = cov ? cov.requirements.length - counts.met : null;
 
@@ -134,22 +144,13 @@ export default function Overview() {
         </p>
 
         <div className="relative mt-6 w-full max-w-2xl" data-tour="bar">
-          <div className="flex h-2 gap-0.5 overflow-hidden rounded-full bg-navy-800">
-            {BAR_ORDER.map((s) => {
-              const w = total ? (counts[s] / total) * 100 : 0;
-              return w > 0 ? (
-                <div key={s} className={`${STATUS_BAR[s]} opacity-90 transition-all duration-700`} style={{ width: `${w}%` }} />
-              ) : null;
+          <div className="flex h-2.5 gap-0.5 overflow-hidden rounded-full bg-navy-800" role="img" aria-label={`${buckets.done} done, ${buckets.progress} in progress, ${buckets.lost} lost`}>
+            {GROUP_ORDER.map((k) => {
+              const w = total ? (buckets[k] / total) * 100 : 0;
+              return w > 0 ? <div key={k} className={`${TONE[GROUP[k].tone].bar} opacity-90 transition-all duration-700`} style={{ width: `${w}%` }} /> : null;
             })}
           </div>
-          <div className="mt-3 flex flex-wrap justify-center gap-x-4 gap-y-1 text-xs text-slate-400 sm:gap-x-5">
-            {BAR_ORDER.filter((s) => counts[s] > 0).map((s) => (
-              <span key={s} className="flex items-center gap-1.5">
-                <span className={`h-1.5 w-1.5 rounded-full ${STATUS_BAR[s]}`} />
-                <span className="font-semibold tabular-nums text-slate-200">{counts[s]}</span> {STATUS_LABEL[s].toLowerCase()}
-              </span>
-            ))}
-          </div>
+          <ColorKey counts={buckets} className="mt-3" />
           {USING_MOCK && !zero && (
             <button
               data-tour="sprint"
@@ -168,26 +169,27 @@ export default function Overview() {
       {/* ---------- Bento ---------- */}
       <section className="grid grid-cols-1 gap-4 md:grid-cols-3 [&>*]:min-w-0">
         {/* Lost requirements */}
-        <div data-tour="lost" className={`${card} relative overflow-hidden p-5 ${lost.length ? "border-orange-400/30" : ""}`}>
-          {lost.length > 0 && <div className="pointer-events-none absolute -right-10 -top-10 h-32 w-32 rounded-full bg-orange-400/10 blur-2xl" />}
+        <div data-tour="lost" className={`${card} relative overflow-hidden p-5 ${lost.length ? "border-rose-400/30" : ""}`}>
+          {lost.length > 0 && <div className="pointer-events-none absolute -right-10 -top-10 h-32 w-32 rounded-full bg-rose-400/10 blur-2xl" />}
           <p className={eyebrow}>Lost requirements</p>
-          <p className={`mt-1 text-4xl font-semibold tabular-nums ${lost.length ? "text-orange-200" : "text-emerald-300"}`}>
+          <p className={`mt-1 text-4xl font-semibold tabular-nums ${lost.length ? "text-rose-200" : "text-emerald-300"}`}>
             {lost.length}
           </p>
-          <p className="text-xs text-slate-400">{lost.length ? "in the spec, but never became a ticket" : "every requirement is ticketed"}</p>
+          <p className="text-xs text-slate-300">{lost.length ? "in the spec, but nobody made a ticket for them" : "every requirement has a ticket ✓"}</p>
           <ul className="mt-4 space-y-2">
             {lost.map((r) => (
-              <li key={r.req_id} className="flex items-start justify-between gap-3 rounded-lg border border-orange-400/20 bg-navy-950/50 p-2.5">
+              <li key={r.req_id} className="flex items-center justify-between gap-3 rounded-lg border border-rose-400/20 bg-navy-950/50 p-2.5">
                 <div className="min-w-0">
-                  <p className="font-mono text-[11px] text-orange-300/90">{r.req_id}</p>
+                  <p className="font-mono text-[11px] text-rose-300/90">{r.req_id}</p>
                   <p className="truncate text-sm text-slate-200">{r.text}</p>
                 </div>
-                <Link
-                  href={tileHref(r) ?? "#"}
-                  className="shrink-0 rounded-md border border-orange-300/40 bg-orange-400/10 px-2 py-1 text-xs font-medium text-orange-200 hover:bg-orange-400/20"
+                <button
+                  data-tour="create-ticket"
+                  onClick={() => setCreating(r)}
+                  className="shrink-0 rounded-md border border-cyan-300/40 bg-cyan-400/10 px-2.5 py-1 text-xs font-medium text-cyan-100 hover:bg-cyan-400/20"
                 >
-                  Draft
-                </Link>
+                  + Create ticket
+                </button>
               </li>
             ))}
           </ul>
@@ -223,6 +225,9 @@ export default function Overview() {
               );
             })}
           </ul>
+          <div className="mt-3 border-t border-navy-700/70 pt-3">
+            <PRLinkBox compact />
+          </div>
         </div>
 
         {/* Model quality */}
@@ -276,8 +281,27 @@ export default function Overview() {
           </h2>
           <p className="text-sm text-slate-300">Every promise in the spec, and where it got to: spec → ticket → pull request.</p>
         </div>
-        <RequirementMap rows={cov.requirements} />
+        <RequirementMap rows={cov.requirements} onCreateTicket={setCreating} />
       </section>
+
+      {creating && (
+        <CreateTicketModal
+          row={creating}
+          onClose={() => setCreating(null)}
+          onCreated={(key) => {
+            setToast(`${key} created. ${creating.req_id} is no longer lost.`);
+            setCreating(null);
+            load();
+          }}
+        />
+      )}
+      {toast && (
+        <div className="fixed inset-x-0 bottom-20 z-50 flex justify-center px-4">
+          <div role="status" className="dz-pop rounded-full border border-emerald-300/30 bg-navy-900/95 px-4 py-2 text-sm text-emerald-100 shadow-[0_0_24px_-8px_rgba(52,211,153,0.7)]">
+            ✓ {toast}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

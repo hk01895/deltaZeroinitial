@@ -111,3 +111,28 @@ Positive class for precision/recall = a **gap** (actual `partial` or `missing`).
 ```
 `pushback` is `null` when the change is fine. `reply` supports `**bold**` and line breaks.
 `POST /assistant/changes` receives `{ change, req_id, decision: "applied" | "kept_spec" | "overridden", reason?, at }` so overrides can be fed back into prompts.
+
+## Lost requirements → Create ticket
+`POST /tickets/draft` `{ "req_id": "REQ-009", "text": "..." }` → `TicketDraft`
+```json
+{ "req_id": "REQ-009", "title": "...", "description": "...",
+  "acceptance_criteria": ["...", "..."], "precision_score": 91, "issues": ["Added measurable thresholds"] }
+```
+`POST /tickets` with the (edited) `TicketDraft` → `{ "ticket_key": "CARE-18", "ticket_url": "https://..." }`.
+Backend creates the Jira issue; the requirement's coverage status becomes `not_started` (no longer `never_ticketed`).
+
+## "Not the fix you want?": regenerate a suggestion
+`POST /prs/{pr_id}/fixes/{req_id}` `{ "feedback": "Use a config value instead of hard-coding 24" }` →
+```json
+{ "suggested_diff": "--- a/...", "suggested_test": "def test_...", "note": "New approach based on your feedback..." }
+```
+Backend calls Nemotron Super with: requirement + diff + previous suggestion + reviewer feedback. Store feedback with the override log.
+
+## GitHub
+- Automatic: GitHub App / webhook on `pull_request` (`opened`, `synchronize`, `reopened`). Backend reads the ticket key from branch/title,
+  fetches the diff, runs the verifier, posts a review comment and a commit status check ("DeltaZero: 2/5 requirements met").
+- Manual: `POST /prs/check` `{ "url": "https://github.com/org/repo/pull/12" }` → `{ "pr_id": 12 }` (runs the same check on demand).
+
+## Verifier (used by the PR check and by eval/run_eval.py)
+`POST /verify` `{ "requirements": [{ "req_id": "REQ-1", "text": "..." }], "diff": "<unified diff>", "sector": "general" }`
+→ `RequirementVerdict[]` (one per requirement, same shape as in `PRReview.verdicts`).

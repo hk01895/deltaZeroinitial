@@ -6,6 +6,9 @@ import {
   mockCoverage,
   mockEval,
   mockFinishSprint,
+  mockCreateTicket,
+  mockDraftTicket,
+  mockRegenerateFix,
   mockResetDemo,
   mockPRReview,
   mockPRs,
@@ -13,6 +16,10 @@ import {
   mockRulePacks,
 } from "./mock";
 import type {
+  CoverageRow,
+  CreatedTicket,
+  FixSuggestion,
+  TicketDraft,
   Coverage,
   EvalResult,
   Override,
@@ -36,7 +43,7 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
   return (await res.json()) as T;
 }
 
-async function withFallback<T>(live: () => Promise<T>, mock: () => T): Promise<T> {
+async function withFallback<T>(live: () => Promise<T>, mock: () => T | Promise<T>): Promise<T> {
   if (USING_MOCK) return mock();
   try {
     return await live();
@@ -130,5 +137,54 @@ export function getRulePack(sector: Sector): Promise<RulePack> {
   return withFallback(
     () => request<RulePack>(`/rulepacks/${sector}`),
     () => mockRulePacks[sector],
+  );
+}
+
+// ---- Tickets (Lost requirements → "Create ticket") -------------------------
+
+export function draftTicket(row: CoverageRow): Promise<TicketDraft> {
+  return withFallback(
+    () => request<TicketDraft>(`/tickets/draft`, { method: "POST", body: JSON.stringify({ req_id: row.req_id, text: row.text }) }),
+    () => mockDraftTicket(row),
+  );
+}
+
+export function createTicket(draft: TicketDraft): Promise<CreatedTicket> {
+  return withFallback(
+    () => request<CreatedTicket>(`/tickets`, { method: "POST", body: JSON.stringify(draft) }),
+    () => mockCreateTicket(draft.req_id),
+  );
+}
+
+// ---- "Not the fix I want": regenerate a suggestion from reviewer feedback ---
+
+const fixAttempts: Record<string, number> = {};
+export function regenerateFix(prId: number, reqId: string, feedback: string): Promise<FixSuggestion> {
+  const k = `${prId}:${reqId}`;
+  const attempt = (fixAttempts[k] = (fixAttempts[k] ?? -1) + 1);
+  return withFallback(
+    () => request<FixSuggestion>(`/prs/${prId}/fixes/${reqId}`, { method: "POST", body: JSON.stringify({ feedback }) }),
+    async () => {
+      await new Promise((r) => setTimeout(r, 700));
+      return mockRegenerateFix(reqId, feedback, attempt);
+    },
+  );
+}
+
+// ---- GitHub: check any PR by pasting its link ---------------------------------
+
+export function parsePRLink(url: string): { owner: string; repo: string; number: number } | null {
+  const m = url.trim().match(/github\.com\/([^/\s]+)\/([^/\s]+)\/pull\/(\d+)/i);
+  return m ? { owner: m[1], repo: m[2], number: Number(m[3]) } : null;
+}
+
+export function checkPRLink(url: string): Promise<{ pr_id: number }> {
+  const parsed = parsePRLink(url);
+  return withFallback(
+    () => request<{ pr_id: number }>(`/prs/check`, { method: "POST", body: JSON.stringify({ url }) }),
+    () => {
+      if (!parsed) throw new Error("That doesn't look like a GitHub pull request link.");
+      return { pr_id: parsed.number };
+    },
   );
 }

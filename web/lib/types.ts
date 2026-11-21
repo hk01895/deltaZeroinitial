@@ -113,6 +113,26 @@ export interface RulePack {
   rules: { id: string; text: string }[];
 }
 
+export interface TicketDraft {
+  req_id: string;
+  title: string;
+  description: string;
+  acceptance_criteria: string[];
+  precision_score: number; // 0..100 from the Ticket Sharpener
+  issues: string[]; // what the sharpener fixed or still flags
+}
+
+export interface CreatedTicket {
+  ticket_key: string;
+  ticket_url: string;
+}
+
+export interface FixSuggestion {
+  suggested_diff: string;
+  suggested_test: string;
+  note: string; // how the AI used the reviewer's feedback
+}
+
 export interface OverrideRequest {
   pr_id: number;
   req_id: string;

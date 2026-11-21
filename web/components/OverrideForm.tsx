@@ -6,7 +6,7 @@ import type { Override, Verdict } from "@/lib/types";
 import { STATUS_LABEL } from "./StatusBadge";
 import { btnPrimary, input } from "@/lib/ui";
 
-const VERDICTS: Verdict[] = ["met", "partial", "missing", "needs_human"];
+const VERDICTS: Verdict[] = ["met", "missing", "needs_human"];
 const MIN_REASON = 10;
 
 export default function OverrideForm({
@@ -22,6 +22,7 @@ export default function OverrideForm({
   onDone: (o: Override) => void;
   onCancel: () => void;
 }) {
+  const norm = (v: Verdict): Verdict => (v === "partial" ? "missing" : v);
   const [verdict, setVerdict] = useState<Verdict>(current === "met" ? "missing" : "met");
   const [reason, setReason] = useState("");
   const [author, setAuthor] = useState("reviewer");
@@ -30,7 +31,7 @@ export default function OverrideForm({
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (verdict === current) return setError("Pick a verdict different from the AI's.");
+    if (verdict === norm(current)) return setError("Pick a verdict different from the AI's.");
     if (reason.trim().length < MIN_REASON)
       return setError(`Explain why (at least ${MIN_REASON} characters). DeltaZero learns from this.`);
     setSaving(true);
@@ -56,9 +57,9 @@ export default function OverrideForm({
           <span className="mb-1 block text-xs text-slate-400">New verdict</span>
           <select value={verdict} onChange={(e) => setVerdict(e.target.value as Verdict)} className={input}>
             {VERDICTS.map((v) => (
-              <option key={v} value={v} disabled={v === current}>
+              <option key={v} value={v} disabled={v === norm(current)}>
                 {STATUS_LABEL[v]}
-                {v === current ? " (current)" : ""}
+                {v === norm(current) ? " (current)" : ""}
               </option>
             ))}
           </select>

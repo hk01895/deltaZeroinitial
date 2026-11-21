@@ -1,6 +1,6 @@
 import Link from "next/link";
 import type { CoverageRow, CoverageStatus } from "@/lib/types";
-import StatusBadge from "./StatusBadge";
+import StatusBadge, { GROUP, GROUP_OF, TONE } from "./StatusBadge";
 
 // Requirement map, grouped so problems come first.
 // Accessibility: status is always spelled out in text (never color alone),
@@ -8,15 +8,7 @@ import StatusBadge from "./StatusBadge";
 // with a descriptive label, and text keeps high contrast on the dark navy.
 
 const PRIORITY_RANK = { high: 0, medium: 1, low: 2 } as const;
-const ATTENTION_RANK: Partial<Record<CoverageStatus, number>> = { never_ticketed: 0, missing: 1, partial: 2 };
-
-const EDGE: Record<CoverageStatus, string> = {
-  never_ticketed: "before:bg-orange-400",
-  missing: "before:bg-rose-400",
-  partial: "before:bg-amber-300",
-  not_started: "before:bg-slate-400",
-  met: "before:bg-emerald-400",
-};
+const PROGRESS_RANK: Partial<Record<CoverageStatus, number>> = { missing: 0, partial: 1, not_started: 2 };
 
 const focusRing =
   "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300 focus-visible:ring-offset-2 focus-visible:ring-offset-navy-950";
@@ -53,7 +45,7 @@ const STEP_STYLE: Record<StepState, { icon: string; cls: string }> = {
   ok: { icon: "✓", cls: "border-emerald-400/30 bg-emerald-400/10 text-emerald-200" },
   bad: { icon: "✕", cls: "border-rose-400/40 bg-rose-400/10 text-rose-200" },
   partial: { icon: "◐", cls: "border-amber-300/40 bg-amber-300/10 text-amber-100" },
-  pending: { icon: "…", cls: "border-slate-500/40 bg-slate-500/10 text-slate-300" },
+  pending: { icon: "…", cls: "border-amber-300/30 bg-amber-300/[0.06] text-amber-100" },
 };
 
 function Trace({ r }: { r: CoverageRow }) {
@@ -73,14 +65,15 @@ function Trace({ r }: { r: CoverageRow }) {
   );
 }
 
-function Tile({ r }: { r: CoverageRow }) {
-  const href = hrefFor(r);
-  const action = r.status === "never_ticketed" ? "Draft a ticket" : href ? "Open PR review" : null;
+function Tile({ r, onCreateTicket }: { r: CoverageRow; onCreateTicket?: (r: CoverageRow) => void }) {
+  const lost = r.status === "never_ticketed";
+  const href = lost ? null : hrefFor(r);
+  const action = href ? "Open PR review" : null;
   const inner = (
     <>
       <div className="flex flex-wrap items-center justify-between gap-2">
         <span className="font-mono text-xs font-semibold text-slate-300">{r.req_id}</span>
-        <StatusBadge status={r.status} />
+        <StatusBadge status={r.status} kind="coverage" />
       </div>
       <p className="mt-2 text-[15px] leading-6 text-slate-50">{r.text}</p>
       {r.reason && (
@@ -92,10 +85,19 @@ function Tile({ r }: { r: CoverageRow }) {
       <div className="mt-3 flex flex-wrap items-center justify-between gap-2">
         <Trace r={r} />
         {action && <span className="text-xs font-medium text-cyan-200">{action} →</span>}
+        {lost && onCreateTicket && (
+          <button
+            onClick={() => onCreateTicket(r)}
+            className={`rounded-md border border-cyan-300/40 bg-cyan-400/10 px-2.5 py-1 text-xs font-medium text-cyan-100 hover:bg-cyan-400/20 ${focusRing}`}
+            aria-label={`Create a ticket for ${r.req_id}`}
+          >
+            + Create ticket
+          </button>
+        )}
       </div>
     </>
   );
-  const cls = `relative block overflow-hidden rounded-xl border border-navy-700/80 bg-navy-900/80 p-4 pl-5 before:absolute before:inset-y-0 before:left-0 before:w-1 ${EDGE[r.status]}`;
+  const cls = `relative block overflow-hidden rounded-xl border border-navy-700/80 bg-navy-900/80 p-4 pl-5 before:absolute before:inset-y-0 before:left-0 before:w-1 ${TONE[GROUP[GROUP_OF[r.status]].tone].edge}`;
   return href ? (
     <Link href={href} className={`${cls} transition hover:border-cyan-300/30 hover:bg-navy-850 ${focusRing}`} aria-label={`${r.req_id}: ${r.text}. ${action}`}>
       {inner}
@@ -132,38 +134,37 @@ function Section({
   );
 }
 
-export default function RequirementMap({ rows }: { rows: CoverageRow[] }) {
+export default function RequirementMap({ rows, onCreateTicket }: { rows: CoverageRow[]; onCreateTicket?: (r: CoverageRow) => void }) {
   const byPriority = (a: CoverageRow, b: CoverageRow) => PRIORITY_RANK[a.priority] - PRIORITY_RANK[b.priority];
-  const attention = rows
-    .filter((r) => r.status in ATTENTION_RANK)
-    .sort((a, b) => (ATTENTION_RANK[a.status]! - ATTENTION_RANK[b.status]!) || byPriority(a, b));
-  const notStarted = rows.filter((r) => r.status === "not_started").sort(byPriority);
+  const rank = (m: Partial<Record<CoverageStatus, number>>) => (a: CoverageRow, b: CoverageRow) => (m[a.status] ?? 9) - (m[b.status] ?? 9) || byPriority(a, b);
+  const attention = rows.filter((r) => GROUP_OF[r.status] === "lost").sort(byPriority);
+  const notStarted = rows.filter((r) => GROUP_OF[r.status] === "progress").sort(rank(PROGRESS_RANK));
   const done = rows.filter((r) => r.status === "met");
 
   return (
     <div className="space-y-8">
       {attention.length > 0 && (
-        <Section title="Needs attention" hint="Promised, but not delivered. Most urgent first." count={attention.length} tone="text-rose-200">
+        <Section title="✕ Lost" hint="In the spec, but nobody made a ticket. Create one to get it moving." count={attention.length} tone="text-rose-200">
           <div className="grid grid-cols-1 gap-3 md:grid-cols-2 lg:grid-cols-3">
             {attention.map((r) => (
-              <Tile key={r.req_id} r={r} />
+              <Tile key={r.req_id} r={r} onCreateTicket={onCreateTicket} />
             ))}
           </div>
         </Section>
       )}
 
       {notStarted.length > 0 && (
-        <Section title="Not started" hint="Ticketed, but no code yet." count={notStarted.length} tone="text-slate-100">
+        <Section title="◐ In progress" hint="Has a ticket, not finished yet. The Why line says what's left." count={notStarted.length} tone="text-amber-200">
           <div className="grid grid-cols-1 gap-3 md:grid-cols-2 lg:grid-cols-3">
             {notStarted.map((r) => (
-              <Tile key={r.req_id} r={r} />
+              <Tile key={r.req_id} r={r} onCreateTicket={onCreateTicket} />
             ))}
           </div>
         </Section>
       )}
 
       {done.length > 0 && (
-        <Section title="Done" hint="Verified in code." count={done.length} tone="text-emerald-200">
+        <Section title="✓ Done" hint="Verified in code." count={done.length} tone="text-emerald-200">
           <ul className="divide-y divide-navy-700/70 overflow-hidden rounded-xl border border-navy-700/70 bg-navy-900/50">
             {done.map((r) => {
               const href = hrefFor(r);

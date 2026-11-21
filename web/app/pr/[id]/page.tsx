@@ -117,9 +117,11 @@ export default function PRReviewPage() {
                 </p>
               </div>
               <div className="flex flex-wrap gap-x-3 gap-y-1 text-sm sm:justify-end">
-                {ORDER.filter((s) => counts[s] > 0).map((s) => (
-                  <span key={s} className="text-slate-400">
-                    <span className="font-semibold tabular-nums text-slate-200">{counts[s]}</span> {STATUS_LABEL[s].toLowerCase()}
+                {Object.entries(
+                  review.verdicts.reduce<Record<string, number>>((acc, v) => ({ ...acc, [STATUS_LABEL[v.verdict]]: (acc[STATUS_LABEL[v.verdict]] ?? 0) + 1 }), {}),
+                ).map(([label, n]) => (
+                  <span key={label} className="text-slate-400">
+                    <span className="font-semibold tabular-nums text-slate-200">{n}</span> {label.toLowerCase()}
                   </span>
                 ))}
               </div>

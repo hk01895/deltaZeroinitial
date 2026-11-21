@@ -4,6 +4,7 @@
 
 import { getCoverage, getPRs, USING_MOCK } from "./api";
 import { mockRulePacks } from "./mock";
+import { look } from "@/components/StatusBadge";
 import type { CoverageRow, Sector } from "./types";
 
 export interface Pushback {
@@ -151,7 +152,7 @@ async function mockBrain(raw: string, sector: Sector): Promise<AssistantReply> {
   if (/missing|left|gap|status|broken|lost|what('?s| is) (wrong|open)/.test(m)) {
     if (delta === 0) return { reply: "Nothing! Δ is 0. Everything you promised shipped." };
     return {
-      reply: `**${delta} requirement${delta > 1 ? "s" : ""}** still open:\n` + open.map((r) => `• **${r.req_id}** (${r.status.replace("_", " ")}): ${r.text}`).join("\n"),
+      reply: `**${delta} requirement${delta > 1 ? "s" : ""}** still open:\n` + open.map((r) => `• **${r.req_id}** (${look(r.status, "coverage").label}): ${r.text}`).join("\n"),
     };
   }
 
@@ -167,7 +168,7 @@ async function mockBrain(raw: string, sector: Sector): Promise<AssistantReply> {
   // Explain a requirement
   if (req && /why|explain|what about|status of|how is/.test(m)) {
     return {
-      reply: `**${req.req_id}**: ${req.text}\n\nStatus: **${req.status.replace("_", " ")}**\nTrail: ${trace(req)}` + (req.reason ? `\nWhy: ${req.reason}` : ""),
+      reply: `**${req.req_id}**: ${req.text}\n\nStatus: **${look(req.status, "coverage").label}**\nTrail: ${trace(req)}` + (req.reason ? `\nWhy: ${req.reason}` : ""),
       links: req.pr_id ? [{ label: `Open PR #${req.pr_id}`, href: `/pr/${req.pr_id}` }] : undefined,
     };
   }
@@ -225,7 +226,7 @@ async function mockBrain(raw: string, sector: Sector): Promise<AssistantReply> {
   }
 
   if (req) {
-    return { reply: `**${req.req_id}**: ${req.text}\nStatus: **${req.status.replace("_", " ")}** · ${trace(req)}` };
+    return { reply: `**${req.req_id}**: ${req.text}\nStatus: **${look(req.status, "coverage").label}** · ${trace(req)}` };
   }
 
   return {

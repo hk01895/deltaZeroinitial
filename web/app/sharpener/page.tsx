@@ -21,7 +21,7 @@ function SharpenerInner() {
         <p className="mt-1 text-sm text-slate-400">Paste a ticket. DeltaZero scores its precision, checks the codebase, and rewrites it.</p>
       </div>
       {req && (
-        <p className="rounded-lg border border-orange-400/30 bg-orange-400/10 px-3 py-2 text-sm text-orange-100">
+        <p className="rounded-lg border border-rose-400/30 bg-rose-400/10 px-3 py-2 text-sm text-rose-50">
           Drafting a ticket for <span className="font-mono font-semibold">{req}</span>, which was never ticketed.
         </p>
       )}

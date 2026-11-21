@@ -1,17 +1,18 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { regenerateFix } from "@/lib/api";
 import type { Override, RequirementVerdict } from "@/lib/types";
-import StatusBadge, { STATUS_LABEL } from "./StatusBadge";
+import StatusBadge, { STATUS_LABEL, TONE } from "./StatusBadge";
 import { DiffBlock, EvidenceBlock, PlainCode } from "./CodeBlock";
 import OverrideForm from "./OverrideForm";
-import { btnGhost, card, eyebrow } from "@/lib/ui";
+import { btnGhost, btnPrimary, card, eyebrow, input } from "@/lib/ui";
 
 const ACCENT: Record<RequirementVerdict["verdict"], string> = {
-  met: "before:bg-emerald-400",
-  partial: "before:bg-amber-300",
-  missing: "before:bg-rose-400",
-  needs_human: "before:bg-sky-400",
+  met: TONE.good.edge,
+  partial: TONE.bad.edge,
+  missing: TONE.bad.edge,
+  needs_human: TONE.wait.edge,
 };
 
 export default function VerdictCard({
@@ -24,7 +25,39 @@ export default function VerdictCard({
   onOverridden: (o: Override) => void;
 }) {
   const [showOverride, setShowOverride] = useState(false);
-  const hasFix = Boolean(v.suggested_diff || v.suggested_test);
+  const [fix, setFix] = useState({ diff: v.suggested_diff ?? null, test: v.suggested_test ?? null, note: null as string | null });
+  const [asking, setAsking] = useState(false);
+  const [feedback, setFeedback] = useState("");
+  const [regenBusy, setRegenBusy] = useState(false);
+  const [fbErr, setFbErr] = useState<string | null>(null);
+  const [history, setHistory] = useState<string[]>([]);
+  const hasFix = Boolean(fix.diff || fix.test);
+
+  // A re-run brings a fresh verdict: reset the fix to the new suggestion.
+  useEffect(() => {
+    setFix({ diff: v.suggested_diff ?? null, test: v.suggested_test ?? null, note: null });
+    setHistory([]);
+    setAsking(false);
+  }, [v.suggested_diff, v.suggested_test]);
+
+  const redo = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const f = feedback.trim();
+    if (f.length < 8) return setFbErr("Tell the AI what you want instead (a sentence is enough).");
+    setRegenBusy(true);
+    setFbErr(null);
+    try {
+      const r = await regenerateFix(prId, v.req_id, f);
+      setFix({ diff: r.suggested_diff, test: r.suggested_test, note: r.note });
+      setHistory((h) => [...h, f]);
+      setFeedback("");
+      setAsking(false);
+    } catch (err) {
+      setFbErr(err instanceof Error ? err.message : "Could not regenerate the fix");
+    } finally {
+      setRegenBusy(false);
+    }
+  };
 
   return (
     <div
@@ -67,9 +100,9 @@ export default function VerdictCard({
 
       {/* Evidence Guard */}
       {v.downgraded_from && (
-        <div data-tour="guard" className="mt-3 rounded-lg border border-sky-400/25 bg-sky-400/[0.06] px-3 py-2 text-sm text-sky-100">
-          <span className="font-semibold text-sky-300">Evidence Guard:</span> the model said &ldquo;{STATUS_LABEL[v.downgraded_from]}&rdquo;,
-          but the code it quoted isn&rsquo;t in the diff. Downgraded to <span className="font-semibold">Needs human</span>.
+        <div data-tour="guard" className="mt-3 rounded-lg border border-amber-300/30 bg-amber-300/[0.06] px-3 py-2 text-sm text-amber-50">
+          <span className="font-semibold text-amber-200">Evidence Guard:</span> the model said &ldquo;{STATUS_LABEL[v.downgraded_from]}&rdquo;,
+          but the code it quoted isn&rsquo;t in the diff. So we marked it <span className="font-semibold">Check needed</span>.
         </div>
       )}
 
@@ -86,20 +119,63 @@ export default function VerdictCard({
       {hasFix && (
         <details data-tour="fix" className="mt-3 rounded-lg border border-navy-700" open={v.verdict !== "met"}>
           <summary className="cursor-pointer select-none px-3 py-2 text-sm font-medium text-slate-300 hover:text-cyan-100">
-            Suggested fix {v.suggested_diff && "· diff"} {v.suggested_test && "· test"}
+            Suggested fix {fix.diff && "· code"} {fix.test && "· test"} {history.length > 0 && `· version ${history.length + 1}`}
           </summary>
           <div className="space-y-3 border-t border-navy-700 p-3">
-            {v.suggested_diff && (
+            {fix.note && (
+              <p className="rounded-lg border border-cyan-300/25 bg-cyan-400/[0.06] px-3 py-2 text-sm text-cyan-50">↻ {fix.note}</p>
+            )}
+            {fix.diff && (
               <div>
-                <p className={`${eyebrow} mb-1`}>Suggested diff</p>
-                <DiffBlock diff={v.suggested_diff} />
+                <p className={`${eyebrow} mb-1`}>Suggested code change</p>
+                <DiffBlock diff={fix.diff} />
               </div>
             )}
-            {v.suggested_test && (
+            {fix.test && (
               <div>
-                <p className={`${eyebrow} mb-1`}>Suggested test</p>
-                <PlainCode code={v.suggested_test} />
+                <p className={`${eyebrow} mb-1`}>Test that proves it works</p>
+                <PlainCode code={fix.test} />
               </div>
+            )}
+
+            {/* Don't like the suggestion? Tell the AI what you want. */}
+            {!asking ? (
+              <button
+                type="button"
+                data-tour="redo-fix"
+                onClick={() => setAsking(true)}
+                className="text-sm font-medium text-cyan-200 hover:underline"
+              >
+                ↻ Not the fix you want? Tell the AI your requirements
+              </button>
+            ) : (
+              <form onSubmit={redo} className="space-y-2 rounded-lg border border-cyan-300/25 bg-cyan-400/[0.04] p-3">
+                <label className="block text-sm font-medium text-slate-100" htmlFor={`fb-${v.req_id}`}>
+                  What should the fix do instead?
+                </label>
+                <p className="text-xs text-slate-300">e.g. &ldquo;Use a config value instead of hard-coding 24&rdquo;, &ldquo;Use POST /cancel, not DELETE&rdquo;, &ldquo;Return 409 not 400&rdquo;</p>
+                <textarea
+                  id={`fb-${v.req_id}`}
+                  autoFocus
+                  rows={3}
+                  value={feedback}
+                  onChange={(e) => setFeedback(e.target.value)}
+                  className={`${input} w-full px-3 py-2 placeholder:text-slate-500`}
+                  placeholder="Describe what you want…"
+                />
+                {fbErr && <p className="text-xs text-rose-300">{fbErr}</p>}
+                <div className="flex gap-2">
+                  <button type="submit" disabled={regenBusy} className={btnPrimary + " !px-3 !py-1.5"}>
+                    {regenBusy ? "Rewriting with Nemotron Super…" : "Rewrite the fix"}
+                  </button>
+                  <button type="button" onClick={() => setAsking(false)} className="px-2 text-sm text-slate-400 hover:text-slate-100">
+                    Cancel
+                  </button>
+                </div>
+              </form>
+            )}
+            {history.length > 0 && (
+              <p className="text-xs text-slate-400">Your feedback so far: {history.map((h) => `“${h}”`).join(" → ")}</p>
             )}
           </div>
         </details>
@@ -126,8 +202,13 @@ export default function VerdictCard({
         />
       ) : (
         <div className="mt-3 flex justify-end">
-          <button data-tour="override" onClick={() => setShowOverride(true)} className={btnGhost}>
-            Override
+          <button
+            data-tour="override"
+            onClick={() => setShowOverride(true)}
+            className={btnGhost}
+            title="The AI's verdict (met / missing / …) is wrong? Change it and say why."
+          >
+            Override verdict
           </button>
         </div>
       )}

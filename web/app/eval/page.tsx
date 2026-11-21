@@ -5,6 +5,7 @@ import { getEval } from "@/lib/api";
 import type { EvalResult } from "@/lib/types";
 import StatCard from "@/components/StatCard";
 import { STATUS_LABEL } from "@/components/StatusBadge";
+import type { Verdict } from "@/lib/types";
 import { card } from "@/lib/ui";
 import { BackLink } from "@/components/AppShell";
 
@@ -19,7 +20,12 @@ export default function EvalPage() {
 
   if (!data) return <p className="text-sm text-slate-400">Loading eval…</p>;
 
-  const maxCell = Math.max(1, ...data.confusion.flat());
+  // Show the same 3 verdicts as the rest of the app (partial + missing = "Not met").
+  const groups = Array.from(new Set(data.labels.map((l) => STATUS_LABEL[l as Verdict])));
+  const gi = (l: Verdict) => groups.indexOf(STATUS_LABEL[l]);
+  const matrix = groups.map(() => groups.map(() => 0));
+  data.confusion.forEach((row, i) => row.forEach((n, j) => (matrix[gi(data.labels[i])][gi(data.labels[j])] += n)));
+  const maxCell = Math.max(1, ...matrix.flat());
   const { latency } = data;
   const maxLat = Math.max(latency.all_deep_avg_ms, latency.routed_avg_ms, latency.fast_avg_ms, 1);
   const speedup = latency.routed_avg_ms ? latency.all_deep_avg_ms / latency.routed_avg_ms : 0;
@@ -50,17 +56,17 @@ export default function EvalPage() {
               <thead>
                 <tr>
                   <th />
-                  {data.labels.map((l) => (
-                    <th key={l} className="px-1 pb-2 text-[10px] font-medium leading-tight text-slate-400 sm:px-2 sm:text-xs">
-                      {STATUS_LABEL[l]}
+                  {groups.map((l) => (
+                    <th key={l} className="px-1 pb-2 text-[10px] font-medium leading-tight text-slate-300 sm:px-2 sm:text-xs">
+                      {l}
                     </th>
                   ))}
                 </tr>
               </thead>
               <tbody>
-                {data.confusion.map((row, i) => (
+                {matrix.map((row, i) => (
                   <tr key={i}>
-                    <th className="pr-2 text-right text-[10px] font-medium leading-tight text-slate-400 sm:pr-3 sm:text-xs">{STATUS_LABEL[data.labels[i]]}</th>
+                    <th className="pr-2 text-right text-[10px] font-medium leading-tight text-slate-300 sm:pr-3 sm:text-xs">{groups[i]}</th>
                     {row.map((n, j) => {
                       const diag = i === j;
                       const alpha = n / maxCell;

@@ -3,6 +3,8 @@
 
 import type {
   Coverage,
+  FixSuggestion,
+  TicketDraft,
   EvalResult,
   PRReview,
   PRSummary,
@@ -197,6 +199,15 @@ export function mockRerun(id: number, sector: Sector): PRReview {
   return mockPRReview(id, sector);
 }
 
+// Tickets created from the "Lost requirements" card.
+const createdTickets: Record<string, string> = {};
+let nextTicket = 18;
+export function mockCreateTicket(req_id: string): { ticket_key: string; ticket_url: string } {
+  const key = createdTickets[req_id] ?? `CARE-${nextTicket++}`;
+  createdTickets[req_id] = key;
+  return { ticket_key: key, ticket_url: `${JIRA}/${key}` };
+}
+
 // Demo-only: pretend the team shipped the last requirements so the Δ hits 0.
 let sprintDone = false;
 export function mockFinishSprint() {
@@ -207,6 +218,8 @@ export function mockFinishSprint() {
 export function mockResetDemo() {
   pr12Fixed = false;
   sprintDone = false;
+  for (const k of Object.keys(createdTickets)) delete createdTickets[k];
+  nextTicket = 18;
 }
 
 // Coverage reflects the demo state: once PR #12 is fixed, REQ-003..005 flip to met.
@@ -216,7 +229,23 @@ const LATE: Record<string, { ticket_key: string; pr_id: number }> = {
   "REQ-010": { ticket_key: "CARE-17", pr_id: 14 },
 };
 
+function withCreated(c: Coverage): Coverage {
+  if (!Object.keys(createdTickets).length) return c;
+  return {
+    ...c,
+    requirements: c.requirements.map((r) => {
+      const key = createdTickets[r.req_id];
+      if (!key || r.status !== "never_ticketed") return r;
+      return { ...r, status: "not_started", ticket_key: key, ticket_url: `${JIRA}/${key}`, reason: `Ticket ${key} created. Waiting for someone to build it.` };
+    }),
+  };
+}
+
 export function mockCoverage(): Coverage {
+  return withCreated(rawCoverage());
+}
+
+function rawCoverage(): Coverage {
   if (sprintDone) {
     return {
       ...baseCoverage,
@@ -304,3 +333,68 @@ export const mockRulePacks: Record<Sector, RulePack> = {
     ],
   },
 };
+
+// ---- Ticket drafts and fix regeneration (mock) ----------------------------
+
+export function mockDraftTicket(r: { req_id: string; text: string; priority: string }): TicketDraft {
+  const t = r.text.replace(/\.$/, "");
+  const specific: Record<string, string[]> = {
+    "REQ-009": [
+      "An SMS is sent 24 hours (±5 min) before each confirmed appointment",
+      "No SMS is sent for cancelled appointments",
+      "SMS delivery failures are logged and retried once",
+    ],
+    "REQ-010": [
+      "Patient can download all past and upcoming appointments as one PDF",
+      "PDF includes date, time, doctor and status for each appointment",
+      "Export finishes in under 5 seconds for 500 appointments",
+    ],
+  };
+  return {
+    req_id: r.req_id,
+    title: t,
+    description: `From the original spec (${r.req_id}): ${r.text} This requirement was never ticketed, so DeltaZero drafted this ticket.`,
+    acceptance_criteria: specific[r.req_id] ?? [t, "Covered by at least one automated test", "Failure case returns a clear error message"],
+    precision_score: specific[r.req_id] ? 91 : 78,
+    issues: ["Added measurable thresholds", "Added a failure case", "Linked to the original requirement ID"],
+  };
+}
+
+const ALT_FIXES: Record<string, { diff: string; test: string }[]> = {
+  "REQ-004": [
+    {
+      diff: `--- a/api/config.py\n+++ b/api/config.py\n@@ -4,0 +5,1 @@\n+CANCEL_WINDOW_HOURS = 24  # spec REQ-004, change here only\n--- a/api/routes/appointments.py\n+++ b/api/routes/appointments.py\n@@ -30,0 +31,8 @@\n+@router.post("/appointments/{appt_id}/cancel")\n+def cancel(appt_id: int, db=Depends(get_db)):\n+    appt = db.get_appointment(appt_id)\n+    if hours_until(appt.start_time) < settings.CANCEL_WINDOW_HOURS:\n+        raise HTTPException(409, "Too late to cancel online. Please call the clinic.")\n+    db.cancel(appt)\n+    audit.log("cancel_appointment", appt_id)\n+    return {"status": "cancelled"}`,
+      test: `@pytest.mark.parametrize("hours,ok", [(48, True), (24.1, True), (23.9, False), (2, False)])\ndef test_cancel_window(client, make_appt, hours, ok):\n    appt = make_appt(hours_from_now=hours)\n    r = client.post(f"/appointments/{appt.id}/cancel")\n    assert (r.status_code == 200) == ok`,
+    },
+  ],
+  "REQ-003": [
+    {
+      diff: `--- a/api/routes/appointments.py\n+++ b/api/routes/appointments.py\n@@ -18,2 +18,3 @@\n-def book(req: BookingRequest, db=Depends(get_db)):\n+def book(req: BookingRequest, tasks: BackgroundTasks, db=Depends(get_db)):\n@@ -24,1 +25,2 @@\n+    tasks.add_task(mailer.send_now, appt.patient_email, "confirmation", appt.id)\n     return appt`,
+      test: `def test_confirmation_queued_as_background_task(client, fake_mailer):\n    client.post("/appointments", json=BOOKING)\n    assert fake_mailer.sent[-1].template == "confirmation"`,
+    },
+  ],
+  "REQ-005": [
+    {
+      diff: `--- a/api/middleware/audit.py\n+++ b/api/middleware/audit.py\n@@ -0,0 +1,9 @@\n+class AuditPatientReads(BaseHTTPMiddleware):\n+    async def dispatch(self, request, call_next):\n+        response = await call_next(request)\n+        if request.method == "GET" and request.url.path.startswith("/patients/"):\n+            audit.log("read_patient", user_id=request.state.user_id,\n+                      timestamp=datetime.utcnow(), path=request.url.path)\n+        return response`,
+      test: `def test_every_patient_read_is_audited(client, audit_store, doctor_token):\n    for pid in (1, 2, 3):\n        client.get(f"/patients/{pid}", headers=doctor_token)\n    assert len(audit_store.entries("read_patient")) == 3`,
+    },
+  ],
+};
+
+export function mockRegenerateFix(reqId: string, feedback: string, attempt: number): FixSuggestion {
+  const alts = ALT_FIXES[reqId] ?? [];
+  const alt = alts.length ? alts[attempt % alts.length] : null;
+  const header = `# Reviewer asked: ${feedback.replace(/\n/g, " ")}`;
+  if (alt) {
+    return {
+      suggested_diff: alt.diff,
+      suggested_test: `${header}\n${alt.test}`,
+      note: `New approach based on your feedback: "${feedback}". The old suggestion was saved so the AI won't repeat it.`,
+    };
+  }
+  return {
+    suggested_diff: `${header}\n(DeltaZero would regenerate this fix with Nemotron Super using your feedback.)`,
+    suggested_test: `${header}\n# test regenerated to match the new approach`,
+    note: `Regenerated using your feedback: "${feedback}".`,
+  };
+}
