@@ -7,7 +7,7 @@ import { ask, logChange, type AssistantReply } from "@/lib/assistant";
 import { useSector } from "./SectorProvider";
 import { btnPrimary, input } from "@/lib/ui";
 
-// "Ask Δ": floating chat. Answers questions, drafts tickets, and applies changes,
+// "Ask DeltaBot": floating chat. Answers questions, drafts tickets, and applies changes,
 // or pushes back when a change looks like a bad idea (you can still override it).
 //
 // Other components can open it with:
@@ -125,10 +125,10 @@ export default function Assistant() {
         <button
           data-tour="ask"
           onClick={() => setOpen(true)}
-          aria-label="Open Ask Delta assistant"
+          aria-label="Open DeltaBot"
           className="fixed bottom-4 right-4 z-40 flex items-center gap-2 rounded-full border border-cyan-300/40 bg-navy-900/90 px-4 py-3 text-sm font-medium text-cyan-100 backdrop-blur transition hover:bg-navy-800 sm:bottom-6 sm:right-6"
         >
-          <span className="text-base font-bold text-cyan-300">Δ</span> Ask Δ
+          <span className="text-base font-bold text-cyan-300">Δ</span> Ask DeltaBot
         </button>
       )}
 
@@ -137,13 +137,13 @@ export default function Assistant() {
         <div
           data-tour="ask-panel"
           role="dialog"
-          aria-label="Ask Delta assistant"
+          aria-label="DeltaBot"
           className="fixed inset-x-0 bottom-0 z-40 flex h-[85vh] flex-col border-t border-cyan-300/20 bg-navy-950/95 backdrop-blur-md sm:inset-x-auto sm:bottom-6 sm:right-6 sm:h-[560px] sm:w-[400px] sm:rounded-2xl sm:border"
         >
           <div className="flex items-center justify-between border-b border-navy-700/70 px-4 py-3">
             <div>
               <p className="text-sm font-semibold text-slate-50">
-                <span className="text-cyan-300">Δ</span> Ask Δ
+                <span className="text-cyan-300">Δ</span> Ask DeltaBot
               </p>
               <p className="text-xs text-slate-400">Ask anything, or tell me a change. I&rsquo;ll push back if it&rsquo;s risky.</p>
             </div>
@@ -279,7 +279,7 @@ export default function Assistant() {
               value={text}
               onChange={(e) => setText(e.target.value)}
               placeholder="Ask or request a change…"
-              aria-label="Message Ask Delta"
+              aria-label="Message DeltaBot"
               className={`${input} min-w-0 flex-1 px-3 py-2 placeholder:text-slate-500`}
             />
             <button type="submit" disabled={busy || !text.trim()} className={btnPrimary + " !px-3"}>

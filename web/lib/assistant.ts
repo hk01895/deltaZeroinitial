@@ -1,4 +1,4 @@
-// "Ask Δ" assistant. Tries POST /assistant on the backend first; if that endpoint
+// DeltaBot assistant. Tries POST /assistant on the backend first; if that endpoint
 // isn't there, a small rule-based brain answers from the loaded project's real data.
 
 import { API_URL, getCoverage } from "./api";
@@ -114,7 +114,7 @@ async function localBrain(raw: string, sector: Sector): Promise<AssistantReply> 
   if (!msg || /^(hi|hey|hello|help|what can you do)\b/.test(m)) {
     return {
       reply:
-        "Hi! I'm **Ask Δ**. I can:\n" +
+        "Hi! I'm **DeltaBot**. I can:\n" +
         "• tell you what's missing (\"what's left?\")\n" +
         "• explain a requirement (\"why is REQ-004 failing?\")\n" +
         "• draft a ticket (\"draft a ticket for REQ-009\")\n" +
