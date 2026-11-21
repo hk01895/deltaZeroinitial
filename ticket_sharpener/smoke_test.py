@@ -20,14 +20,11 @@ def step(name, fn):
 
 if not os.getenv("NVIDIA_API_KEY"):
     raise SystemExit("Set NVIDIA_API_KEY first (build.nvidia.com -> any model -> Get API Key).")
-for v in ("NEMOTRON_FAST_MODEL", "NEMOTRON_DEEP_MODEL"):
-    if os.getenv(v) is None:
-        print(f"NOTE  {v} not set; using placeholder, expect a 404/400 below")
 
 print("fast model:", llm.FAST, "| embed model:", llm.EMBED)
 step("chat, thinking OFF", lambda: llm.chat([{"role": "user", "content": "Reply with the single word: ok"}], thinking=False, max_tokens=20).strip()[:60])
 print(f"      latency {getattr(llm.chat, 'last_latency', 0):.2f}s")
-step("chat, thinking ON (deep model)", lambda: llm.chat([{"role": "user", "content": "What is 17*23? Answer with just the number."}], thinking=True, max_tokens=800).strip()[-60:])
+step("chat, thinking ON (deep model)", lambda: llm.chat([{"role": "user", "content": "What is 17*23? Answer with just the number."}], thinking=True, max_tokens=4000).strip()[-60:])
 step("embeddings", lambda: f"{len(llm.embed(['hello'], kind='query')[0])} dims")
 
 
