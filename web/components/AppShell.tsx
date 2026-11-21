@@ -14,7 +14,6 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
               Δ0
             </span>
             <span className="hidden text-base font-semibold tracking-tight text-slate-100 min-[380px]:inline">DeltaZero</span>
-            <span className="ml-2 hidden text-xs text-slate-500 lg:inline">Powered by NVIDIA Nemotron</span>
           </Link>
           <div className="flex items-center gap-2 sm:gap-3">
             <Link
