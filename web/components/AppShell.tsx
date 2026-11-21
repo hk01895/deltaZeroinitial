@@ -5,7 +5,7 @@ import Assistant from "./Assistant";
 
 // Minimal top bar, no sidebar. The overview page is the hub; everything else
 // is one click away from its cards.
-export default function AppShell({ children, mock }: { children: React.ReactNode; mock: boolean }) {
+export default function AppShell({ children }: { children: React.ReactNode }) {
   return (
     <div className="min-h-screen">
       <header className="sticky top-0 z-20 border-b border-navy-700/40 bg-navy-950/70 backdrop-blur-md">
@@ -16,11 +16,6 @@ export default function AppShell({ children, mock }: { children: React.ReactNode
             </span>
             <span className="hidden text-base font-semibold tracking-tight text-slate-100 min-[380px]:inline">DeltaZero</span>
             <span className="ml-2 hidden text-xs text-slate-500 lg:inline">Powered by NVIDIA Nemotron</span>
-            {mock && (
-              <span className="ml-1 hidden rounded-full border sm:inline border-amber-300/20 bg-amber-300/10 px-2 py-0.5 text-[10px] font-medium text-amber-200">
-                mock data
-              </span>
-            )}
           </Link>
           <div className="flex items-center gap-2 sm:gap-3">
             <Link

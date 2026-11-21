@@ -60,7 +60,6 @@ cd backend
 python3 -m venv .venv && source .venv/bin/activate
 pip install -r requirements.txt
 cp .env.example .env          # add NVIDIA_API_KEY and GITHUB_TOKEN
-python3 seed_demo.py --reset  # loads the CareSlot demo project
 uvicorn main:app --reload --port 8000
 ```
 API docs: http://localhost:8000/docs
@@ -69,7 +68,6 @@ API docs: http://localhost:8000/docs
 ```bash
 cd web
 npm install
-cp .env.local.example .env.local
 npm run dev
 ```
 Then open http://localhost:3000.
@@ -80,8 +78,6 @@ Then open http://localhost:3000.
 - checks every PR that closes one of those issues (`Fixes #12`, `Closes #12`, or a branch like `12-search`), then keeps watching open PRs for new pushes
 
 **Or check one pull request:** paste its link into "Check a pull request" on the home page.
-
-**No API key yet?** Set `DELTAZERO_FAKE_LLM=1` in `backend/.env` to run the AI in offline demo mode. To run the dashboard on built-in demo data with no backend at all, leave `NEXT_PUBLIC_API_URL` empty in `web/.env.local`.
 
 
 **Run the eval on real GitHub projects:**
@@ -96,7 +92,7 @@ Details: [`eval/README.md`](eval/README.md). Every endpoint and JSON shape: [`do
 | Folder | What's inside |
 |---|---|
 | `ai_engine/` | Nemotron calls, review prompt, Lightning → Super router, Evidence Guard, spec splitter, learning from corrections |
-| `backend/` | FastAPI + SQLite, GitHub integration, PR watching, dashboard API (`/ui/*`), demo seed |
+| `backend/` | FastAPI + SQLite, GitHub integration, PR watching, dashboard API (`/ui/*`) |
 | `ticket_sharpener/` | Ticket Sharpener, redundancy check, medical and finance rule packs |
 | `web/` | Next.js dashboard |
 | `eval/` | Build test cases from real GitHub projects and score the verifier |

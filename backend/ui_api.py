@@ -31,7 +31,7 @@ import engine  # noqa: E402
 
 router = APIRouter(prefix="/ui", tags=["dashboard"])
 
-PROJECT = os.getenv("DELTAZERO_PROJECT", "DeltaZero demo project")
+PROJECT = os.getenv("DELTAZERO_PROJECT", "No project loaded")
 SPEC_NAME = os.getenv("DELTAZERO_SPEC_NAME", "spec.md")
 TICKET_PREFIX = os.getenv("TICKET_PREFIX", "DZ")
 TICKET_URL = os.getenv("TICKET_URL_BASE", "")  # e.g. https://yourteam.atlassian.net/browse

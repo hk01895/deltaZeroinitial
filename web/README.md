@@ -1,29 +1,22 @@
-# DeltaZero – web dashboard (Haasika)
+# DeltaZero dashboard
 
-Next.js 14 + Tailwind. Runs on mock data until the backend is up.
+Next.js 14 + Tailwind. Shows only real data from the DeltaZero backend. There is no built-in sample project.
 
 ## Run it
 ```bash
 cd web
 npm install
-cp .env.local.example .env.local   # leave NEXT_PUBLIC_API_URL empty for mock data
-npm run dev                        # http://localhost:3000
+npm run dev        # http://localhost:3000
 ```
+The backend must be running at `http://localhost:8000` (see the main README). To use a different address, create `web/.env.local` with `NEXT_PUBLIC_API_URL=http://<host>:8000/ui`.
 
 ## Pages
 | Route | What it shows |
 |---|---|
-| `/coverage` | Coverage Map: every requirement by status, "never ticketed" highlighted, drift alerts, "Draft ticket" button |
-| `/pr` | List of PRs with requirements-met score |
-| `/pr/12` | PR results: verdict cards, code evidence, Evidence Guard, suggested diff + test, Override, Re-run |
-| `/eval` | Precision, recall, false-positive rate, confusion matrix, fast vs. deep latency |
-| `/sharpener` | Placeholder for Nimalan's Ticket Sharpener |
+| `/` | The Δ, lost requirements, pull requests, requirement map. Empty until you load a project. |
+| `/project/new` | Load a project: GitHub repo + spec (or README) |
+| `/pr`, `/pr/<number>` | PR results: verdicts, code evidence, suggested fix + test, override, re-run |
+| `/sharpener` | Ticket Sharpener |
+| `/eval` | Accuracy on real GitHub projects (after running `eval/run_eval.py`) |
 
-The **Rule pack** dropdown in the header (General / Medical / Finance) is sent as `?sector=` to the API and swaps the rule panel on PR pages.
-
-
-## Connecting the backend
-Set `NEXT_PUBLIC_API_URL=http://localhost:8000/ui` in `.env.local` (the backend's dashboard adapter, `backend/ui_api.py`). Endpoints and JSON shapes are in
-`../docs/api-contract.md` and `lib/types.ts`. If any request fails, the UI falls back to mock data
-and logs a warning, so the demo never shows a blank screen.
-Backend needs CORS enabled for `http://localhost:3000`.
+Endpoints and JSON shapes: `../docs/api-contract.md` and `lib/types.ts`.

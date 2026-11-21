@@ -22,10 +22,12 @@ export default function CreateTicketModal({
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    draftTicket(row).then((d) => {
-      setDraft(d);
-      setCriteria(d.acceptance_criteria.join("\n"));
-    });
+    draftTicket(row)
+      .then((d) => {
+        setDraft(d);
+        setCriteria(d.acceptance_criteria.join("\n"));
+      })
+      .catch((e) => setError(e instanceof Error ? e.message : "Could not draft the ticket"));
   }, [row]);
 
   useEffect(() => {
@@ -75,7 +77,11 @@ export default function CreateTicketModal({
         </div>
 
         {!draft ? (
-          <p className="mt-6 animate-pulse text-sm text-slate-300">Drafting with the Ticket Sharpener…</p>
+          error ? (
+            <p className="mt-6 text-sm text-rose-300">{error}</p>
+          ) : (
+            <p className="mt-6 animate-pulse text-sm text-slate-300">Drafting with the Ticket Sharpener…</p>
+          )
         ) : (
           <div className="mt-5 space-y-4">
             <div className="flex flex-wrap items-center gap-2 rounded-lg border border-emerald-400/25 bg-emerald-400/[0.06] px-3 py-2 text-sm">

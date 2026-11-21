@@ -12,7 +12,9 @@ export default function PRListPage() {
   const [prs, setPrs] = useState<PRSummary[] | null>(null);
 
   useEffect(() => {
-    getPRs().then(setPrs);
+    getPRs()
+      .then(setPrs)
+      .catch(() => setPrs([]));
   }, []);
 
   return (
@@ -27,6 +29,8 @@ export default function PRListPage() {
       </div>
       {!prs ? (
         <p className="text-sm text-slate-400">Loading…</p>
+      ) : prs.length === 0 ? (
+        <p className="text-sm text-slate-400">No pull requests checked yet. Load a project, or paste a PR link above.</p>
       ) : (
         <div className={`${card} divide-y divide-navy-700/60 overflow-hidden`}>
           {prs.map((p) => {

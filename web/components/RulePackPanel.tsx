@@ -12,7 +12,9 @@ export default function RulePackPanel() {
 
   useEffect(() => {
     let alive = true;
-    getRulePack(sector).then((p) => alive && setPack(p));
+    getRulePack(sector)
+      .then((p) => alive && setPack(p))
+      .catch(() => alive && setPack(null));
     return () => {
       alive = false;
     };

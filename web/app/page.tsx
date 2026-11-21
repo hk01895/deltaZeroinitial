@@ -3,7 +3,7 @@
 import Icon from "@/components/Icon";
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { finishDemoSprint, getCoverage, getCurrentProject, getEval, getPRs, USING_MOCK } from "@/lib/api";
+import { getCoverage, getCurrentProject, getEval, getPRs } from "@/lib/api";
 import type { ProjectStatus } from "@/lib/types";
 import type { Coverage, CoverageRow, CoverageStatus, EvalResult, PRSummary } from "@/lib/types";
 import { useSector } from "@/components/SectorProvider";
@@ -38,9 +38,17 @@ export default function Overview() {
   const [burst, setBurst] = useState(0);
   const prevDelta = useRef<number | null>(null);
 
+  const [loadError, setLoadError] = useState<string | null>(null);
   const load = useCallback(() => {
-    getCoverage(sector).then(setCov);
-    getPRs().then(setPrs);
+    getCoverage(sector)
+      .then((c) => {
+        setCov(c);
+        setLoadError(null);
+      })
+      .catch((e) => setLoadError(e instanceof Error ? e.message : String(e)));
+    getPRs()
+      .then(setPrs)
+      .catch(() => setPrs([]));
   }, [sector]);
 
   // While a freshly loaded project's PRs are being checked, refresh every few seconds.
@@ -108,6 +116,14 @@ export default function Overview() {
     }
   }, [deltaNow]);
 
+  if (!cov && loadError)
+    return (
+      <div className="mx-auto max-w-xl py-16 text-center">
+        <h1 className="text-2xl font-semibold tracking-tight text-slate-50">Backend not running</h1>
+        <p className="mt-2 text-sm leading-6 text-slate-300">{loadError}</p>
+        <p className="mt-2 text-sm text-slate-400">Start it with <span className="font-mono text-slate-200">uvicorn main:app --port 8000</span> in the backend folder, then refresh.</p>
+      </div>
+    );
   if (!cov) return <p className="py-24 text-center text-sm text-slate-400">Measuring the delta…</p>;
 
   if (cov.requirements.length === 0)
@@ -195,18 +211,6 @@ export default function Overview() {
             })}
           </div>
           <ColorKey counts={buckets} className="mt-3" />
-          {USING_MOCK && !zero && (
-            <button
-              data-tour="sprint"
-              onClick={() => {
-                finishDemoSprint();
-                load();
-              }}
-              className="mt-4 text-[11px] text-slate-500 underline decoration-dotted underline-offset-4 transition hover:text-cyan-200"
-            >
-              Demo: simulate next sprint shipping the rest →
-            </button>
-          )}
         </div>
       </section>
 
@@ -320,7 +324,7 @@ export default function Overview() {
               <p className="mt-3 text-[11px] text-slate-500">{ev.n_cases} labeled cases</p>
             </>
           ) : (
-            <p className="mt-3 text-sm text-slate-400">{USING_MOCK ? "Loading…" : "No eval run yet. Run eval/run_eval.py to see how accurate it is."}</p>
+            <p className="mt-3 text-sm text-slate-400">No eval run yet. Run eval/run_eval.py to see how accurate it is.</p>
           )}
         </Link>
       </section>

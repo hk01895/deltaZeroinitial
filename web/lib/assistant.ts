@@ -1,9 +1,8 @@
-// "Ask Δ" assistant. In live mode it calls POST /assistant (backend + Nemotron).
-// In mock mode (or if the call fails) a small rule-based brain answers using
-// the same coverage data, so the demo always works.
+// "Ask Δ" assistant. Tries POST /assistant on the backend first; if that endpoint
+// isn't there, a small rule-based brain answers from the loaded project's real data.
 
-import { getCoverage, getPRs, USING_MOCK } from "./api";
-import { mockRulePacks } from "./mock";
+import { API_URL, getCoverage, getRulePack } from "./api";
+import type { RulePack } from "./types";
 import { look } from "@/components/StatusBadge";
 import type { CoverageRow, Sector } from "./types";
 
@@ -28,13 +27,12 @@ export interface ChangeLogEntry {
   at: string;
 }
 
-const API_URL = (process.env.NEXT_PUBLIC_API_URL ?? "").replace(/\/$/, "");
 const changeLog: ChangeLogEntry[] = [];
 
 export function logChange(e: Omit<ChangeLogEntry, "at">) {
   const entry = { ...e, at: new Date().toISOString() };
   changeLog.push(entry);
-  if (!USING_MOCK) {
+  {
     fetch(`${API_URL}/assistant/changes`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -45,7 +43,7 @@ export function logChange(e: Omit<ChangeLogEntry, "at">) {
 }
 
 export async function ask(message: string, sector: Sector): Promise<AssistantReply> {
-  if (!USING_MOCK) {
+  {
     try {
       const res = await fetch(`${API_URL}/assistant`, {
         method: "POST",
@@ -54,15 +52,15 @@ export async function ask(message: string, sector: Sector): Promise<AssistantRep
       });
       if (res.ok) return (await res.json()) as AssistantReply;
     } catch {
-      /* fall through to mock */
+      /* fall through to the built-in brain */
     }
   }
   await new Promise((r) => setTimeout(r, 450)); // feels like thinking
-  return mockBrain(message, sector);
+  return localBrain(message, sector);
 }
 
 // ---------------------------------------------------------------------------
-// Mock brain
+// Built-in brain (uses the loaded project's real coverage data)
 
 const WEAKEN = /\b(skip|remove|drop|disable|turn off|get rid of|no longer|don'?t (need|log|encrypt|test)|without|ignore|plain ?text|unencrypted|no tests?)\b/i;
 
@@ -88,8 +86,8 @@ function findReq(msg: string, rows: CoverageRow[]): CoverageRow | null {
 
 const numbers = (s: string) => (s.match(/\d+(\.\d+)?\s*(seconds?|secs?|minutes?|mins?|hours?|hrs?|days?|%|mb)?/gi) ?? []).map((x) => x.trim().toLowerCase());
 
-function ruleFor(sector: Sector, msg: string): string | null {
-  const pack = mockRulePacks[sector];
+function ruleFor(pack: RulePack | null, msg: string): string | null {
+  if (!pack) return null;
   const m = msg.toLowerCase();
   const hit =
     pack.rules.find((r) => /audit/i.test(r.text) && /audit|log/.test(m)) ??
@@ -118,10 +116,11 @@ function draftTicket(r: CoverageRow) {
   );
 }
 
-async function mockBrain(raw: string, sector: Sector): Promise<AssistantReply> {
+async function localBrain(raw: string, sector: Sector): Promise<AssistantReply> {
   const msg = raw.trim();
   const m = msg.toLowerCase();
   const cov = await getCoverage(sector);
+  const pack = await getRulePack(sector).catch(() => null);
   const rows = cov.requirements;
   const open = rows.filter((r) => r.status !== "met");
   const delta = open.length;
@@ -175,14 +174,14 @@ async function mockBrain(raw: string, sector: Sector): Promise<AssistantReply> {
 
   // Change requests: apply, or push back
   if (/change|make|set|update|instead|switch|move|let'?s|should|can we|remove|skip|drop|disable|add/.test(m)) {
-    const rule = WEAKEN.test(msg) ? ruleFor(sector, msg) : null;
+    const rule = WEAKEN.test(msg) ? ruleFor(pack, msg) : null;
     if (rule) {
       return {
         reply: "I'd push back on this one.",
         pushback: {
           change: msg,
           req_id: req?.req_id ?? null,
-          rule: `This goes against the active **${mockRulePacks[sector].name}** rule pack (${rule}).`,
+          rule: `This goes against the active **${pack?.name ?? sector}** rule pack (${rule}).`,
           suggestion: "Keep the requirement as written. If there's a real reason (e.g. another system already does it), override with that reason so reviewers can see it.",
         },
       };

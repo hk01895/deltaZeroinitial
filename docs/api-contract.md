@@ -65,8 +65,8 @@ Past overrides are fed into the verifier prompt as examples on the next run.
 ## Coverage
 ```json
 {
-  "project": "CareSlot – Patient Appointment API",
-  "spec_name": "careslot-prd-v1.md",
+  "project": "notes-app",
+  "spec_name": "README.md",
   "updated_at": "...",
   "requirements": [
     { "req_id": "REQ-009", "text": "...", "status": "never_ticketed", "priority": "medium",
@@ -95,7 +95,7 @@ Positive class for precision/recall = a **gap** (actual `partial` or `missing`).
 { "sector": "medical", "name": "Medical / health data", "rules": [ { "id": "MED-1", "text": "..." } ] }
 ```
 
-## Ask Δ assistant (optional; UI falls back to a built-in mock brain)
+## Ask Δ assistant (optional; without it the UI answers from the loaded project data)
 `POST /assistant` body `{ "message": "Change cancellations to 12 hours", "sector": "medical" }` returns:
 ```json
 {
