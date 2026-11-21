@@ -210,35 +210,54 @@ export default function Overview() {
         </div>
       </section>
 
-      {/* ---------- Bento ---------- */}
-      <section className="grid grid-cols-1 gap-4 md:grid-cols-3 [&>*]:min-w-0">
-        {/* Lost requirements */}
-        <div data-tour="lost" className={`${card} relative overflow-hidden p-5 ${lost.length ? "border-rose-400/30" : ""}`}>
-          {lost.length > 0 && <div className="pointer-events-none absolute -right-10 -top-10 h-32 w-32 rounded-full bg-rose-400/10 blur-2xl" />}
-          <p className={eyebrow}>Lost requirements</p>
-          <p className={`mt-1 font-display text-4xl font-semibold tabular-nums ${lost.length ? "text-rose-200" : "text-emerald-300"}`}>
-            {lost.length}
-          </p>
-          <p className="text-xs text-slate-300">{lost.length ? "in the spec, but nobody made a ticket for them" : "every requirement has a ticket"}</p>
-          <ul className="mt-4 space-y-2">
-            {lost.map((r) => (
-              <li key={r.req_id} className="flex items-center justify-between gap-3 rounded-lg border border-rose-400/20 bg-navy-950/50 p-2.5">
-                <div className="min-w-0">
-                  <p className="font-mono text-[11px] text-rose-300/90">{r.req_id}</p>
-                  <p className="truncate text-sm text-slate-200">{r.text}</p>
-                </div>
-                <button
-                  data-tour="create-ticket"
-                  onClick={() => setCreating(r)}
-                  className="shrink-0 rounded-md border border-cyan-300/40 bg-cyan-400/10 px-2.5 py-1 text-xs font-medium text-cyan-100 hover:bg-cyan-400/20"
-                >
-                  <span className="inline-flex items-center gap-1"><Icon name="plus" className="h-3.5 w-3.5" /> Create ticket</span>
-                </button>
-              </li>
-            ))}
-          </ul>
+      {/* ---------- Lost requirements: the hero ---------- */}
+      <section
+        data-tour="lost"
+        aria-labelledby="lost-title"
+        className={`relative overflow-hidden rounded-2xl border p-6 sm:p-8 ${
+          lost.length ? "border-rose-400/35 bg-gradient-to-br from-rose-500/[0.08] via-navy-900/80 to-navy-900/80" : "border-emerald-400/25 bg-navy-900/70"
+        }`}
+      >
+        <div className="grid gap-6 md:grid-cols-[minmax(0,15rem)_minmax(0,1fr)] md:gap-10">
+          <div>
+            <h2 id="lost-title" className="text-sm font-medium uppercase tracking-[0.14em] text-slate-300">
+              Lost requirements
+            </h2>
+            <p className={`mt-2 font-display text-6xl font-semibold tabular-nums leading-none ${lost.length ? "text-rose-200" : "text-emerald-300"}`}>
+              {lost.length}
+            </p>
+            <p className="mt-3 text-sm leading-6 text-slate-300">
+              {lost.length
+                ? "Promised in the spec, but nobody ever made a ticket. Other tools can't see these."
+                : "Every requirement has a ticket. Nothing is falling through the cracks."}
+            </p>
+          </div>
+          {lost.length > 0 && (
+            <ul className="space-y-2 self-center">
+              {lost.map((r) => (
+                <li key={r.req_id} className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-rose-400/20 bg-navy-950/60 px-4 py-3">
+                  <div className="min-w-0 flex-1">
+                    <p className="font-mono text-xs text-rose-300/90">{r.req_id}</p>
+                    <p className="text-[15px] leading-6 text-slate-100">{r.text}</p>
+                  </div>
+                  <button
+                    data-tour="create-ticket"
+                    onClick={() => setCreating(r)}
+                    className="shrink-0 rounded-md border border-cyan-300/40 bg-cyan-400/10 px-3 py-1.5 text-sm font-medium text-cyan-100 hover:bg-cyan-400/20"
+                  >
+                    <span className="inline-flex items-center gap-1.5">
+                      <Icon name="plus" className="h-4 w-4" /> Create ticket
+                    </span>
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
         </div>
+      </section>
 
+      {/* ---------- Secondary: PRs + trust, smaller and unequal ---------- */}
+      <section className="-mt-4 grid grid-cols-1 gap-3 sm:-mt-6 md:grid-cols-[minmax(0,1.7fr)_minmax(0,1fr)] [&>*]:min-w-0">
         {/* Pull requests */}
         <div data-tour="prs" className={`${card} p-5`}>
           <div className="flex items-baseline justify-between">
