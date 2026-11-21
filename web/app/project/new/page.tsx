@@ -56,7 +56,7 @@ export default function NewProjectPage() {
     setBusy(true);
     setError(null);
     setResult(null);
-    setStatus({ name: name || repo, repo, spec_source: spec ? "pasted spec" : "README.md", sector, status: "loading", progress: { step: "spec" } });
+    setStatus({ name: name || repo, repo, spec_source: "pasted spec", sector, status: "loading", progress: { step: "spec" } });
     try {
       setResult(await loadProject({ name: name.trim() || undefined, repo_url: repo.trim(), spec, sector }));
     } catch (err) {
@@ -77,7 +77,7 @@ export default function NewProjectPage() {
       <div className="max-w-2xl">
         <h1 className="text-3xl font-semibold tracking-tight text-slate-50">Load a project</h1>
         <p className="mt-2 text-sm leading-6 text-slate-300">
-          Point DeltaZero at a GitHub repo and give it the spec. It turns the spec into requirements, uses the repo&rsquo;s GitHub Issues as
+          Point DeltaZero at a GitHub repo and paste the requirements. It turns them into a checklist, uses the repo&rsquo;s GitHub Issues as
           tickets, and checks every pull request that closes one of them. After that, every new push is checked automatically.
         </p>
       </div>
@@ -93,18 +93,18 @@ export default function NewProjectPage() {
               className={`${input} mt-1.5 w-full px-3 py-2.5 placeholder:text-slate-500`}
               disabled={busy}
             />
-            <span className="mt-1 block text-xs text-slate-400">Public repos work with any GitHub token. Issues are read as tickets.</span>
           </label>
 
           <label className="block">
             <span className="text-sm font-medium text-slate-100">
-              Spec <span className="font-normal text-slate-400">(optional)</span>
+              Requirements
             </span>
             <textarea
               value={spec}
               onChange={(e) => setSpec(e.target.value)}
               rows={9}
-              placeholder={"Paste the spec, PRD or feature list. One promise per line works best.\n\nLeave empty to use the repo's README as the spec."}
+              placeholder={"Paste the client brief, spec or feature list. One requirement per line works best."}
+              required
               className={`${input} mt-1.5 w-full px-3 py-2.5 leading-6 placeholder:text-slate-500`}
               disabled={busy}
             />
@@ -126,7 +126,7 @@ export default function NewProjectPage() {
           {error && <p className="rounded-lg border border-rose-400/30 bg-rose-400/10 px-3 py-2 text-sm text-rose-100">{error}</p>}
 
           <div className="flex items-center gap-3">
-            <button type="submit" disabled={busy || !repo.trim()} className={btnPrimary}>
+            <button type="submit" disabled={busy || !repo.trim() || !spec.trim()} className={btnPrimary}>
               {busy ? "Loading…" : "Load and start tracking"}
             </button>
             <span className="text-xs text-slate-400">Replaces the project currently on the dashboard.</span>
