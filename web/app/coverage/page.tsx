@@ -142,7 +142,7 @@ export default function CoveragePage() {
               const never = r.status === "never_ticketed";
               return (
                 <tr key={r.req_id} className={never ? "bg-orange-50" : "hover:bg-slate-50"}>
-                  <td className={`px-4 py-3 font-mono text-xs font-semibold ${never ? "border-l-4 border-orange-500" : ""}`}>
+                  <td className={`whitespace-nowrap px-4 py-3 font-mono text-xs font-semibold ${never ? "border-l-4 border-orange-500" : ""}`}>
                     {r.req_id}
                   </td>
                   <td className="px-4 py-3">
