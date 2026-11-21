@@ -5,30 +5,15 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { finishDemoSprint, getCoverage, getEval, getPRs, USING_MOCK } from "@/lib/api";
 import type { Coverage, CoverageRow, CoverageStatus, EvalResult, PRSummary } from "@/lib/types";
 import { useSector } from "@/components/SectorProvider";
-import StatusBadge, { STATUS_BAR, STATUS_LABEL } from "@/components/StatusBadge";
+import { STATUS_BAR, STATUS_LABEL } from "@/components/StatusBadge";
 import CountUp from "@/components/CountUp";
+import RequirementMap from "@/components/RequirementMap";
 import Celebration from "@/components/Celebration";
 import { card, eyebrow, link } from "@/lib/ui";
 
-type Filter = "all" | CoverageStatus;
-const FILTERS: Filter[] = ["all", "met", "partial", "missing", "never_ticketed", "not_started"];
 const BAR_ORDER: CoverageStatus[] = ["met", "partial", "missing", "not_started", "never_ticketed"];
 
-const TILE: Record<CoverageStatus, string> = {
-  met: "border-emerald-400/20 hover:border-emerald-400/40",
-  partial: "border-amber-300/25 hover:border-amber-300/50",
-  missing: "border-rose-400/25 hover:border-rose-400/50",
-  not_started: "border-navy-600 hover:border-slate-500",
-  never_ticketed: "border-dashed border-orange-400/50 bg-orange-400/[0.04] hover:border-orange-300/80",
-};
 
-const DOT_GLOW: Record<CoverageStatus, string> = {
-  met: "shadow-[0_0_10px_1px_rgba(52,211,153,0.6)]",
-  partial: "shadow-[0_0_10px_1px_rgba(252,211,77,0.55)]",
-  missing: "shadow-[0_0_10px_1px_rgba(251,113,133,0.6)]",
-  not_started: "",
-  never_ticketed: "shadow-[0_0_10px_1px_rgba(251,146,60,0.65)]",
-};
 
 // Celebrate the first time we see Δ 0 in this session (click the Δ to replay).
 let celebratedThisSession = false;
@@ -46,7 +31,6 @@ export default function Overview() {
   const [cov, setCov] = useState<Coverage | null>(null);
   const [prs, setPrs] = useState<PRSummary[] | null>(null);
   const [ev, setEv] = useState<EvalResult | null>(null);
-  const [filter, setFilter] = useState<Filter>("all");
 
   const [burst, setBurst] = useState(0);
   const prevDelta = useRef<number | null>(null);
@@ -94,7 +78,6 @@ export default function Overview() {
   const zero = delta === 0;
   const lost = cov.requirements.filter((r) => r.status === "never_ticketed");
   const drifted = cov.requirements.filter((r) => r.drift);
-  const tiles = cov.requirements.filter((r) => filter === "all" || r.status === filter);
   const speedup = ev && ev.latency.routed_avg_ms ? ev.latency.all_deep_avg_ms / ev.latency.routed_avg_ms : 0;
 
   return (
@@ -282,65 +265,14 @@ export default function Overview() {
       )}
 
       {/* ---------- Requirement map ---------- */}
-      <section>
-        <div className="mb-4 flex flex-wrap items-end justify-between gap-3">
-          <div>
-            <h2 className="text-lg font-semibold tracking-tight text-slate-50">Requirement map</h2>
-            <p className="text-sm text-slate-400">Every promise in the spec, traced to its ticket and PR.</p>
-          </div>
-          <div className="flex flex-wrap gap-1.5">
-            {FILTERS.map((f) => {
-              const n = f === "all" ? total : counts[f];
-              const active = filter === f;
-              if (f !== "all" && n === 0) return null;
-              return (
-                <button
-                  key={f}
-                  onClick={() => setFilter(f)}
-                  className={`rounded-full border px-2.5 py-0.5 text-xs font-medium transition ${
-                    active
-                      ? "border-cyan-300/40 bg-cyan-400/10 text-cyan-100 shadow-[0_0_14px_-6px_rgba(103,232,249,0.7)]"
-                      : "border-navy-700 text-slate-400 hover:border-navy-600 hover:text-slate-200"
-                  }`}
-                >
-                  {f === "all" ? "All" : STATUS_LABEL[f]} <span className="tabular-nums opacity-60">{n}</span>
-                </button>
-              );
-            })}
-          </div>
+      <section aria-labelledby="req-map-title">
+        <div className="mb-5">
+          <h2 id="req-map-title" className="text-lg font-semibold tracking-tight text-slate-50">
+            Requirement map
+          </h2>
+          <p className="text-sm text-slate-300">Every promise in the spec, and where it got to: spec → ticket → pull request.</p>
         </div>
-
-        <div className="grid grid-cols-1 gap-3 min-[420px]:grid-cols-2 md:grid-cols-3 lg:grid-cols-5">
-          {tiles.map((r) => {
-            const href = tileHref(r);
-            const body = (
-              <>
-                <div className="flex items-center justify-between">
-                  <span className="font-mono text-[11px] font-semibold text-slate-400">{r.req_id}</span>
-                  <span className={`h-2 w-2 rounded-full ${STATUS_BAR[r.status]} ${DOT_GLOW[r.status]}`} />
-                </div>
-                <p className="mt-2 line-clamp-3 text-[13px] leading-5 text-slate-200 min-[420px]:min-h-[3.75rem]">{r.text}</p>
-                <div className="mt-3 flex items-center justify-between gap-2">
-                  <StatusBadge status={r.status} />
-                  <span className="truncate font-mono text-[10px] text-slate-500">
-                    {r.ticket_key ?? "no ticket"}
-                    {r.pr_id ? ` · #${r.pr_id}` : ""}
-                  </span>
-                </div>
-              </>
-            );
-            const cls = `rounded-xl border bg-navy-900/60 p-3.5 transition ${TILE[r.status]}`;
-            return href ? (
-              <Link key={r.req_id} href={href} className={`${cls} block hover:-translate-y-0.5`}>
-                {body}
-              </Link>
-            ) : (
-              <div key={r.req_id} className={cls}>
-                {body}
-              </div>
-            );
-          })}
-        </div>
+        <RequirementMap rows={cov.requirements} />
       </section>
     </div>
   );

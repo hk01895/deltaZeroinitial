@@ -21,14 +21,14 @@ const baseCoverage: Coverage = {
   requirements: [
     { req_id: "REQ-001", text: "Patients can book an appointment by choosing a doctor and an open time slot.", status: "met", priority: "high", ticket_key: "CARE-12", ticket_url: `${JIRA}/CARE-12`, pr_id: 12, pr_url: `${REPO}/pull/12` },
     { req_id: "REQ-002", text: "Booking the same slot twice returns HTTP 409 and does not create a second appointment.", status: "met", priority: "high", ticket_key: "CARE-12", ticket_url: `${JIRA}/CARE-12`, pr_id: 12, pr_url: `${REPO}/pull/12` },
-    { req_id: "REQ-003", text: "Patients receive a confirmation email within 60 seconds of booking.", status: "partial", priority: "medium", ticket_key: "CARE-12", ticket_url: `${JIRA}/CARE-12`, pr_id: 12, pr_url: `${REPO}/pull/12` },
-    { req_id: "REQ-004", text: "Appointments can be cancelled up to 24 hours before the start time.", status: "missing", priority: "medium", ticket_key: "CARE-12", ticket_url: `${JIRA}/CARE-12`, pr_id: 12, pr_url: `${REPO}/pull/12`, drift: "Spec says 24 hours, ticket CARE-12 says 12 hours" },
-    { req_id: "REQ-005", text: "Every read of patient records is written to an audit log with user ID and timestamp.", status: "missing", priority: "high", ticket_key: "CARE-12", ticket_url: `${JIRA}/CARE-12`, pr_id: 12, pr_url: `${REPO}/pull/12` },
+    { req_id: "REQ-003", text: "Patients receive a confirmation email within 60 seconds of booking.", status: "partial", priority: "medium", ticket_key: "CARE-12", ticket_url: `${JIRA}/CARE-12`, pr_id: 12, pr_url: `${REPO}/pull/12`, reason: "Email goes to a 5-minute batch job; the spec requires 60 seconds." },
+    { req_id: "REQ-004", text: "Appointments can be cancelled up to 24 hours before the start time.", status: "missing", priority: "medium", ticket_key: "CARE-12", ticket_url: `${JIRA}/CARE-12`, pr_id: 12, pr_url: `${REPO}/pull/12`, drift: "Spec says 24 hours, ticket CARE-12 says 12 hours", reason: "No cancel endpoint in PR #12, and the ticket says 12 hours instead of 24." },
+    { req_id: "REQ-005", text: "Every read of patient records is written to an audit log with user ID and timestamp.", status: "missing", priority: "high", ticket_key: "CARE-12", ticket_url: `${JIRA}/CARE-12`, pr_id: 12, pr_url: `${REPO}/pull/12`, reason: "The audit-log code the AI cited is not in the diff, so a person needs to check." },
     { req_id: "REQ-006", text: "Doctors can view their schedule for the next 7 days.", status: "met", priority: "medium", ticket_key: "CARE-9", ticket_url: `${JIRA}/CARE-9`, pr_id: 9, pr_url: `${REPO}/pull/9` },
     { req_id: "REQ-007", text: "Sessions expire after 15 minutes of inactivity.", status: "met", priority: "high", ticket_key: "CARE-7", ticket_url: `${JIRA}/CARE-7`, pr_id: 7, pr_url: `${REPO}/pull/7` },
-    { req_id: "REQ-008", text: "Patient phone numbers are stored encrypted at rest.", status: "not_started", priority: "high", ticket_key: "CARE-15", ticket_url: `${JIRA}/CARE-15`, pr_id: null, pr_url: null },
-    { req_id: "REQ-009", text: "Patients get an SMS reminder 24 hours before their appointment.", status: "never_ticketed", priority: "medium", ticket_key: null, ticket_url: null, pr_id: null, pr_url: null },
-    { req_id: "REQ-010", text: "Patients can export their full appointment history as a PDF.", status: "never_ticketed", priority: "low", ticket_key: null, ticket_url: null, pr_id: null, pr_url: null },
+    { req_id: "REQ-008", text: "Patient phone numbers are stored encrypted at rest.", status: "not_started", priority: "high", ticket_key: "CARE-15", ticket_url: `${JIRA}/CARE-15`, pr_id: null, pr_url: null, reason: "Ticket CARE-15 exists, but no one has opened a PR yet." },
+    { req_id: "REQ-009", text: "Patients get an SMS reminder 24 hours before their appointment.", status: "never_ticketed", priority: "medium", ticket_key: null, ticket_url: null, pr_id: null, pr_url: null, reason: "It is in the spec, but no ticket was ever created." },
+    { req_id: "REQ-010", text: "Patients can export their full appointment history as a PDF.", status: "never_ticketed", priority: "low", ticket_key: null, ticket_url: null, pr_id: null, pr_url: null, reason: "It is in the spec, but no ticket was ever created." },
   ],
 };
 
@@ -226,6 +226,7 @@ export function mockCoverage(): Coverage {
           ...r,
           status: "met",
           drift: null,
+          reason: null,
           ...(late
             ? { ticket_key: late.ticket_key, ticket_url: `${JIRA}/${late.ticket_key}`, pr_id: late.pr_id, pr_url: `${REPO}/pull/${late.pr_id}` }
             : {}),
@@ -237,7 +238,7 @@ export function mockCoverage(): Coverage {
   return {
     ...baseCoverage,
     requirements: baseCoverage.requirements.map((r) =>
-      ["REQ-003", "REQ-004", "REQ-005"].includes(r.req_id) ? { ...r, status: "met", drift: null } : r,
+      ["REQ-003", "REQ-004", "REQ-005"].includes(r.req_id) ? { ...r, status: "met", drift: null, reason: null } : r,
     ),
   };
 }

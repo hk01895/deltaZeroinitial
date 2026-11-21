@@ -76,6 +76,7 @@ Past overrides are fed into the verifier prompt as examples on the next run.
 ```
 `status`: `"met" | "partial" | "missing" | "never_ticketed" | "not_started"`
 `drift`: text when spec and ticket disagree, e.g. `"Spec says 24 hours, ticket says 12 hours"`.
+`reason`: one short plain-language line on why a requirement is not met (e.g. `"No cancel endpoint in PR #12"`), `null` when met.
 
 ## EvalResult
 ```json

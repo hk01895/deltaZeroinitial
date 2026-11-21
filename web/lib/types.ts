@@ -79,6 +79,7 @@ export interface CoverageRow {
   pr_id: number | null;
   pr_url: string | null;
   drift?: string | null; // e.g. "Spec says 15 min, ticket says 30 min"
+  reason?: string | null; // one plain-language line on why it is not met (null when met)
 }
 
 export interface Coverage {

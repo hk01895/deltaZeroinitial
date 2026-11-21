@@ -31,3 +31,15 @@ body {
 @media (prefers-reduced-motion: reduce) {
   .dz-ring, .dz-pop { animation: none; }
 }
+
+/* Visible keyboard focus everywhere (accessibility) */
+a:focus-visible,
+button:focus-visible,
+select:focus-visible,
+summary:focus-visible,
+textarea:focus-visible,
+input:focus-visible {
+  outline: 2px solid #67e8f9;
+  outline-offset: 2px;
+  border-radius: 6px;
+}
