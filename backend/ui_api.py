@@ -69,6 +69,19 @@ def _init():
 _init()
 
 
+def _clear_project():
+    """Wipe the loaded project so the dashboard starts on "Load a project"."""
+    with db.conn() as c:
+        for t in ("verdicts", "overrides", "pr_tickets", "verdict_extras", "pr_meta", "fix_feedback",
+                  "ticket_meta", "requirements", "tickets", "project"):
+            c.execute(f"DELETE FROM {t}")
+
+
+# Every backend start is a clean slate (good for live demos). Set KEEP_PROJECT=1 in .env to keep it.
+if os.getenv("KEEP_PROJECT", "").lower() not in ("1", "true", "yes"):
+    _clear_project()
+
+
 def save_extras(pr_id, head_sha, verdicts):
     """Called by verifier.verify(): keep reasoning / evidence locations for the dashboard."""
     with db.conn() as c:
