@@ -88,6 +88,21 @@ def parse_json(raw):
     return json.loads(raw[start:end + 1])
 
 
+def _norm_issue(i):
+    """The model sometimes drops or renames fields. Always hand the page the same four string fields."""
+    return {"type": str(i.get("type") or "other"),
+            "text": str(i.get("text") or i.get("rule") or i.get("id") or "(unspecified)"),
+            "why": str(i.get("why") or i.get("reason") or i.get("description") or ""),
+            "fix": str(i.get("fix") or i.get("suggestion") or "")}
+
+
+def _as_text(v):
+    """rewrite / criteria sometimes come back as a list instead of a string."""
+    if isinstance(v, list):
+        return "\n".join(str(x) for x in v)
+    return str(v or "")
+
+
 def heuristic_score(issues):
     """Fallback when the model is unreachable."""
     penalty = {"vague_word": 8, "missing_number": 20, "missing_acceptance": 20}
@@ -128,7 +143,7 @@ def sharpen_ticket(ticket, sector=None, redundancy=None):
                 break
         score = sum(subs.values())
         # Merge: model issues first, then any lint issue the model did not already cover.
-        issues = list(data.get("issues", []))
+        issues = [_norm_issue(i) for i in data.get("issues", []) if isinstance(i, dict)]
         covered = " ".join(i.get("text", "").lower() for i in issues)
         have_types = {i.get("type") for i in issues}
         for li in lint_issues:
@@ -141,8 +156,10 @@ def sharpen_ticket(ticket, sector=None, redundancy=None):
             score = heuristic_score(issues)
             subs = None
             result["score_note"] = "Model returned zero sub-scores; used rule-based score."
-        result.update(sub_scores=subs, rewrite=data.get("rewrite", ""),
-                      acceptance_criteria=data.get("acceptance_criteria", []), latency_s=round(getattr(llm.chat, "last_latency", 0), 2))
+        crit = data.get("acceptance_criteria", [])
+        crit = [str(c) for c in crit] if isinstance(crit, list) else [str(crit)]
+        result.update(sub_scores=subs, rewrite=_as_text(data.get("rewrite")),
+                      acceptance_criteria=crit, latency_s=round(getattr(llm.chat, "last_latency", 0), 2))
     except Exception as e:
         print(f"[sharpener] model failed, lint-only fallback: {e}")
         issues, score = lint_issues, heuristic_score(lint_issues)

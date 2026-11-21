@@ -60,6 +60,18 @@ print("zero-score guard OK:", r["score"])
 llm_shim.chat = _orig
 sharpener.llm.chat = _orig
 
+# 3c. malformed model issues (missing fields, list rewrite) must not crash or blank the page
+llm_shim.chat = lambda m, **k: json.dumps({"sub_scores": {"measurable": 5, "specific": 5, "testable": 5, "complete": 5},
+    "issues": [{"type": "sector_gap", "why": "no audit"}, {"rule": "FIN-01"}, "junk"], "rewrite": ["line one", "line two"],
+    "acceptance_criteria": "single string"})
+sharpener.llm.chat = llm_shim.chat
+r = sharpener.sharpen_ticket("Move money")
+assert all(set(i) == {"type", "text", "why", "fix"} and all(isinstance(v, str) for v in i.values()) for i in r["issues"]), r["issues"]
+assert r["rewrite"] == "line one\nline two" and r["acceptance_criteria"] == ["single string"]
+print("malformed-output guard OK")
+llm_shim.chat = _orig
+sharpener.llm.chat = _orig
+
 # 4. model failure -> lint-only fallback, no crash
 llm_shim.chat = lambda *a, **k: (_ for _ in ()).throw(RuntimeError("down"))
 sharpener.llm.chat = llm_shim.chat
