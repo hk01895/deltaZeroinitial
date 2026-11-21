@@ -49,6 +49,17 @@ assert r["score"] == 15 and r["grade"] == "vague" and not r["fallback"] and r["r
 assert any(i["type"] == "missing_number" for i in r["issues"]), r["issues"]  # lint gaps survive a successful model call
 print("sharpen OK: score", r["score"])
 
+# 3b. model echoes the all-zero template -> rule-based score, not 0
+_orig = fake_chat
+llm_shim.chat = lambda m, **k: json.dumps({"sub_scores": {"measurable": 0, "specific": 0, "testable": 0, "complete": 0},
+    "issues": [], "rewrite": "x", "acceptance_criteria": []})
+sharpener.llm.chat = llm_shim.chat
+r = sharpener.sharpen_ticket("Make login faster")
+assert r["score"] > 0 and r.get("score_note"), r
+print("zero-score guard OK:", r["score"])
+llm_shim.chat = _orig
+sharpener.llm.chat = _orig
+
 # 4. model failure -> lint-only fallback, no crash
 llm_shim.chat = lambda *a, **k: (_ for _ in ()).throw(RuntimeError("down"))
 sharpener.llm.chat = llm_shim.chat

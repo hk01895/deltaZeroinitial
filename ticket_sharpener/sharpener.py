@@ -55,17 +55,27 @@ Score four sub-scores, each an integer 0-25:
 Then list problems. Each problem MUST quote the exact phrase from the ticket in "text" (or "(missing)" if something is absent),
 say why it is a problem, and give a concrete fix.
 
-Then rewrite the ticket so it is precise. RULES FOR THE REWRITE:
-- Keep the original intent. Do not invent business facts. Where a number is needed but unknown, write a clearly marked
-  placeholder like [TBD: target p95 latency in ms] instead of guessing.
-- Use short "The system must ..." / "When X, the system must Y" sentences, one requirement per line.
-- Also return acceptance_criteria: 2-5 pass/fail checks a tester could run.
+Then rewrite the ticket so it is precise. STRICT RULES FOR THE REWRITE AND ACCEPTANCE CRITERIA:
+- NEVER invent numbers, times, limits, error text, file names, or features the ticket did not state.
+- Wherever a number or detail is needed but the ticket does not give it, write a placeholder: [TBD: what is needed].
+- Only restate what the ticket asks for, made testable. Do not add new features.
+- One requirement per line, as "The system must ..." or "When X, the system must Y".
+- acceptance_criteria: 2-5 pass/fail checks, also using [TBD: ...] for unknown values.
 
-Reply with ONLY this JSON, no other text:
-{"sub_scores":{"measurable":0,"specific":0,"testable":0,"complete":0},
- "issues":[{"type":"vague_word|missing_number|missing_acceptance|ambiguous_scope|missing_edge_case|sector_gap","text":"","why":"","fix":""}],
- "rewrite":"",
- "acceptance_criteria":[""]}"""
+Scoring guide: a ticket with vague words and no numbers should total under 40. A ticket with measurable limits,
+named inputs/outputs, and a testable behavior should total 80 or more. Do NOT return all zeros.
+
+Reply with ONLY one JSON object, no other text. Issue types: vague_word, missing_number, missing_acceptance,
+ambiguous_scope, missing_edge_case, sector_gap.
+
+EXAMPLE
+Ticket: "Make search better and handle lots of results."
+Output:
+{"sub_scores":{"measurable":3,"specific":6,"testable":4,"complete":5},
+ "issues":[{"type":"vague_word","text":"better","why":"No way to tell when search is better.","fix":"Name the metric to improve, e.g. [TBD: target latency or relevance measure]."},
+           {"type":"vague_word","text":"lots of results","why":"No size given, so it cannot be tested.","fix":"State the maximum result count: [TBD: max results]."}],
+ "rewrite":"The system must return search results within [TBD: target latency in ms].\nThe system must support result sets of up to [TBD: max result count] items.",
+ "acceptance_criteria":["With [TBD: max result count] results, the response time is under [TBD: target latency in ms]."]}"""
 
 
 def parse_json(raw):
@@ -112,7 +122,7 @@ def sharpen_ticket(ticket, sector=None, redundancy=None):
         data = parse_json(raw)
         subs = {k: max(0, min(25, int(data["sub_scores"].get(k, 0)))) for k in ("measurable", "specific", "testable", "complete")}
         score = sum(subs.values())
-        # Merge: model issues first, then any lint issue whose quoted text the model did not already cover.
+        # Merge: model issues first, then any lint issue the model did not already cover.
         issues = list(data.get("issues", []))
         covered = " ".join(i.get("text", "").lower() for i in issues)
         have_types = {i.get("type") for i in issues}
@@ -122,6 +132,9 @@ def sharpen_ticket(ticket, sector=None, redundancy=None):
                     issues.append(li)
             elif li["text"].lower() not in covered:
                 issues.append(li)
+        if score == 0 and issues:  # model echoed a zero template: a ticket with problems is vague, not "0 out of 100"
+            score = heuristic_score(issues)
+            result["score_note"] = "Model returned zero sub-scores; used rule-based score."
         result.update(sub_scores=subs, rewrite=data.get("rewrite", ""),
                       acceptance_criteria=data.get("acceptance_criteria", []), latency_s=round(getattr(llm.chat, "last_latency", 0), 2))
     except Exception as e:
