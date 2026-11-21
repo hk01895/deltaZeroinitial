@@ -74,7 +74,7 @@ Output:
 {"sub_scores":{"measurable":3,"specific":6,"testable":4,"complete":5},
  "issues":[{"type":"vague_word","text":"better","why":"No way to tell when search is better.","fix":"Name the metric to improve, e.g. [TBD: target latency or relevance measure]."},
            {"type":"vague_word","text":"lots of results","why":"No size given, so it cannot be tested.","fix":"State the maximum result count: [TBD: max results]."}],
- "rewrite":"The system must return search results within [TBD: target latency in ms].\nThe system must support result sets of up to [TBD: max result count] items.",
+ "rewrite":"The system must return search results within [TBD: target latency in ms].\\nThe system must support result sets of up to [TBD: max result count] items.",
  "acceptance_criteria":["With [TBD: max result count] results, the response time is under [TBD: target latency in ms]."]}"""
 
 
