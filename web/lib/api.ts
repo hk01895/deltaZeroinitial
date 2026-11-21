@@ -64,7 +64,7 @@ function applyMockOverrides(review: PRReview): PRReview {
 export function getCoverage(sector: Sector): Promise<Coverage> {
   return withFallback(
     () => request<Coverage>(`/coverage?sector=${sector}`),
-    () => mockCoverage,
+    mockCoverage,
   );
 }
 

@@ -6,6 +6,7 @@
 import { Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { card } from "@/lib/ui";
+import { BackLink } from "@/components/AppShell";
 
 function SharpenerInner() {
   const params = useSearchParams();
@@ -14,6 +15,7 @@ function SharpenerInner() {
 
   return (
     <div className="space-y-6">
+      <BackLink />
       <div>
         <h1 className="text-2xl font-semibold tracking-tight text-slate-50">Ticket Sharpener</h1>
         <p className="mt-1 text-sm text-slate-400">Paste a ticket. DeltaZero scores its precision, checks the codebase, and rewrites it.</p>

@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 import { getPRReview, rerunPR } from "@/lib/api";
@@ -9,6 +8,7 @@ import { useSector } from "@/components/SectorProvider";
 import VerdictCard from "@/components/VerdictCard";
 import RulePackPanel from "@/components/RulePackPanel";
 import { STATUS_BAR, STATUS_LABEL } from "@/components/StatusBadge";
+import { BackLink } from "@/components/AppShell";
 import { btnPrimary, card, eyebrow, glow, glowStrong, link } from "@/lib/ui";
 
 const ORDER: Verdict[] = ["missing", "partial", "needs_human", "met"];
@@ -66,9 +66,7 @@ export default function PRReviewPage() {
   return (
     <div className="space-y-6">
       <div className="text-sm">
-        <Link href="/pr" className="text-slate-400 hover:text-cyan-200">
-          ← PR Reviews
-        </Link>
+        <BackLink />
       </div>
 
       {/* Header */}

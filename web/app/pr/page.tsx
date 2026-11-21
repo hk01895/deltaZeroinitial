@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import { getPRs } from "@/lib/api";
 import type { PRSummary } from "@/lib/types";
 import { card } from "@/lib/ui";
+import { BackLink } from "@/components/AppShell";
 
 export default function PRListPage() {
   const [prs, setPrs] = useState<PRSummary[] | null>(null);
@@ -15,6 +16,7 @@ export default function PRListPage() {
 
   return (
     <div className="space-y-6">
+      <BackLink />
       <div>
         <h1 className="text-2xl font-semibold tracking-tight text-slate-50">PR Reviews</h1>
         <p className="mt-1 text-sm text-slate-400">Each PR checked against the requirements of its linked ticket.</p>

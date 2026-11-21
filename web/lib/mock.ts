@@ -14,7 +14,7 @@ import type {
 const REPO = "https://github.com/hk01895/deltaZeroinitial";
 const JIRA = "https://example.atlassian.net/browse";
 
-export const mockCoverage: Coverage = {
+const baseCoverage: Coverage = {
   project: "CareSlot – Patient Appointment API",
   spec_name: "careslot-prd-v1.md",
   updated_at: "2026-11-21T15:10:00Z",
@@ -199,6 +199,17 @@ export function mockRerun(id: number, sector: Sector): PRReview {
 
 export function mockResetDemo() {
   pr12Fixed = false;
+}
+
+// Coverage reflects the demo state: once PR #12 is fixed, REQ-003..005 flip to met.
+export function mockCoverage(): Coverage {
+  if (!pr12Fixed) return baseCoverage;
+  return {
+    ...baseCoverage,
+    requirements: baseCoverage.requirements.map((r) =>
+      ["REQ-003", "REQ-004", "REQ-005"].includes(r.req_id) ? { ...r, status: "met", drift: null } : r,
+    ),
+  };
 }
 
 export const mockPRs = (): PRSummary[] => [

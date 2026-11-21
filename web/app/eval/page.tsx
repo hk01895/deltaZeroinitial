@@ -6,6 +6,7 @@ import type { EvalResult } from "@/lib/types";
 import StatCard from "@/components/StatCard";
 import { STATUS_LABEL } from "@/components/StatusBadge";
 import { card } from "@/lib/ui";
+import { BackLink } from "@/components/AppShell";
 
 const pct = (x: number) => `${Math.round(x * 1000) / 10}%`;
 
@@ -25,6 +26,7 @@ export default function EvalPage() {
 
   return (
     <div className="space-y-6">
+      <BackLink />
       <div>
         <h1 className="text-2xl font-semibold tracking-tight text-slate-50">Eval</h1>
         <p className="mt-1 text-sm text-slate-400">
