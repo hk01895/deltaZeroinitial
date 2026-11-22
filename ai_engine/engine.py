@@ -359,7 +359,11 @@ def match_requirements(requirements, issues) -> dict:
 
     # Words that set a requirement apart from the others ("reschedule", "audit"), not shared ones
     # ("patients", "appointment"). The quoted ticket line must contain at least one of them.
-    stems = lambda t: {w[:5] for w in _norm(t).split() if len(w) >= 4}
+    filler = {"with", "when", "that", "this", "from", "they", "their", "them", "have", "will", "shall", "must",
+              "should", "every", "each", "into", "over", "only", "also", "than", "then", "before", "after", "about",
+              "what", "which", "there", "where", "while", "able", "user", "users", "system", "make", "sure", "does",
+              "done", "need", "needs", "more", "less", "some", "such", "other", "their", "your", "would", "could"}
+    stems = lambda t: {w[:5] for w in _norm(t).split() if len(w) >= 4 and w not in filler}
     req_stems = {r["req_id"]: stems(r["text"]) for r in requirements}
     df = {}
     for ss in req_stems.values():
