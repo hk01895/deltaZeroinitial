@@ -348,7 +348,7 @@ def match_requirements(requirements, issues) -> dict:
     {{"matches": {{"REQ-001": {{"ticket": "#12", "quote": "exact line copied from ticket #12"}}, "REQ-002": null}}}}
     """
     m = {}
-    for model, thinking in ((SUPER, True), (LIGHTNING, False)):
+    for model, thinking in ((LIGHTNING, False), (SUPER, True)):  # fast first; the quote check keeps it strict
         try:
             data = parse_json(nemotron(prompt, model, thinking=thinking))
             m = data.get("matches", {}) if isinstance(data, dict) else {}
