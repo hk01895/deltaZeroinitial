@@ -313,19 +313,28 @@ def regenerate_fix(req_id, requirement, code, previous_diff, feedback) -> dict:
 # Match requirements to tickets (GitHub issues) when loading a real project
 
 
+def _norm(t: str) -> str:
+    return " ".join(re.sub(r"[^a-z0-9 ]+", " ", (t or "").lower()).split())
+
+
 def match_requirements(requirements, issues) -> dict:
-    """requirements: [{req_id, text}]; issues: [{key, title, body}] -> {req_id: issue key or None}."""
+    """requirements: [{req_id, text}]; issues: [{key, title, body}] -> {req_id: issue key or None}.
+
+    Nemotron Super (thinking on) picks the ticket AND quotes the line in it that asks for the behavior.
+    Like Evidence Guard: a match only counts if that quote really is in the ticket. Anything else is lost.
+    """
     if not requirements or not issues:
         return {r["req_id"]: None for r in requirements}
     reqs = "\n".join(f"{r['req_id']}: {r['text']}" for r in requirements)
-    iss = "\n".join(f"{i['key']}: {i['title']} :: {(i.get('body') or '')[:240]}" for i in issues[:80])
+    iss = "\n".join(f"{i['key']}: {i['title']}\n{(i.get('body') or '')[:1200]}\n---" for i in issues[:60])
     prompt = f"""
     You are DeltaZero's ticket matcher.
 
-    For each REQUIREMENT, find the ONE ticket (GitHub issue) that explicitly asks for that exact behavior.
-    Be strict. A ticket on a related topic is NOT a match: the ticket's title or body must clearly describe
-    this specific behavior (for example, a "Booking" ticket does not cover rescheduling, and a
-    "Cancellations" ticket does not cover audit logging). If no ticket explicitly asks for it, use null.
+    For each REQUIREMENT, find the ONE ticket (GitHub issue) that explicitly asks for that exact behavior,
+    and copy the exact line from that ticket (its title or body) that asks for it.
+    Be strict. A ticket on a related topic is NOT a match: the quoted line itself must describe this specific
+    behavior (for example, a line about booking does not cover rescheduling, and a line about cancelling
+    does not cover audit logging). If no line in any ticket asks for it, use null.
     Missing a match is far better than a wrong match: unmatched requirements are flagged as lost.
     Several requirements may match the same ticket.
 
@@ -335,18 +344,37 @@ def match_requirements(requirements, issues) -> dict:
     TICKETS:
     {iss}
 
-    Return ONLY valid JSON: {{"matches": {{"REQ-001": "#12", "REQ-002": null}}}}
+    Return ONLY valid JSON:
+    {{"matches": {{"REQ-001": {{"ticket": "#12", "quote": "exact line copied from ticket #12"}}, "REQ-002": null}}}}
     """
-    try:
-        data = parse_json(nemotron(prompt, LIGHTNING, thinking=False))
-        m = data.get("matches", {}) if isinstance(data, dict) else {}
-    except Exception:
-        m = {}
-    keys = {i["key"] for i in issues}
+    m = {}
+    for model, thinking in ((SUPER, True), (LIGHTNING, False)):
+        try:
+            data = parse_json(nemotron(prompt, model, thinking=thinking))
+            m = data.get("matches", {}) if isinstance(data, dict) else {}
+            break
+        except Exception:
+            continue
+    text_of = {i["key"]: _norm(f"{i['title']}\n{i.get('body') or ''}") for i in issues}
+
+    # Words that set a requirement apart from the others ("reschedule", "audit"), not shared ones
+    # ("patients", "appointment"). The quoted ticket line must contain at least one of them.
+    stems = lambda t: {w[:5] for w in _norm(t).split() if len(w) >= 4}
+    req_stems = {r["req_id"]: stems(r["text"]) for r in requirements}
+    df = {}
+    for ss in req_stems.values():
+        for w in ss:
+            df[w] = df.get(w, 0) + 1
     out = {}
     for r in requirements:
-        k = m.get(r["req_id"])
-        out[r["req_id"]] = k if k in keys else None
+        v = m.get(r["req_id"])
+        key, quote = (v.get("ticket"), v.get("quote")) if isinstance(v, dict) else (v, None)
+        q = _norm(quote or "")
+        ok = key in text_of and len(q.split()) >= 2 and q in text_of[key]
+        own = {w for w in req_stems[r["req_id"]] if df[w] == 1}
+        if ok and own and not (own & stems(q)):
+            ok = False  # the quote is about something related, not this requirement
+        out[r["req_id"]] = key if ok else None
     return out
 
 
@@ -357,13 +385,19 @@ def match_requirements(requirements, issues) -> dict:
 def _fake_answer(prompt: str, model: str) -> str:
     if "ticket matcher" in prompt:
         reqs = re.findall(r"^\s*(REQ-\d+): (.+)$", prompt.split("REQUIREMENTS:")[1].split("TICKETS:")[0], re.M)
-        tix = re.findall(r"^\s*(#\d+): (.+)$", prompt.split("TICKETS:")[1].split("Return ONLY")[0], re.M)
+        block = prompt.split("TICKETS:")[1].split("Return ONLY")[0]
+        lines = []  # (ticket key, line)
+        for chunk in block.split("\n---"):
+            mm = re.search(r"(#\d+): (.+)", chunk)
+            if mm:
+                key = mm.group(1)
+                lines += [(key, l.strip(" -*\t")) for l in [mm.group(2)] + chunk.split(mm.group(0), 1)[1].splitlines() if l.strip()]
         matches = {}
         for rid, text in reqs:
             words = {w for w in re.findall(r"[a-z]{4,}", text.lower())}
-            best = max(tix, key=lambda t: len(words & set(re.findall(r"[a-z]{4,}", t[1].lower()))), default=None)
+            best = max(lines, key=lambda t: len(words & set(re.findall(r"[a-z]{4,}", t[1].lower()))), default=None)
             score = len(words & set(re.findall(r"[a-z]{4,}", best[1].lower()))) if best else 0
-            matches[rid] = best[0] if best and score >= 2 else None
+            matches[rid] = {"ticket": best[0], "quote": best[1]} if best and score >= 2 else None
         return json.dumps({"matches": matches})
     if "requirements splitter" in prompt:
         desc = prompt.split("PROJECT DESCRIPTION:")[1].split("Instructions:")[0]
