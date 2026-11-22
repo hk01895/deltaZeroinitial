@@ -170,7 +170,7 @@ export default function NewProjectPage() {
           {result && (
             <div className="mt-5 space-y-1 border-t border-navy-700 pt-4 text-sm text-slate-300">
               <p>
-                <span className="font-semibold text-slate-100">{result.requirements}</span> requirements from {result.spec_source}
+                <span className="font-semibold text-slate-100">{result.requirements}</span> requirements
               </p>
               <p>
                 <span className="font-semibold text-slate-100">{result.tickets}</span> GitHub issues as tickets

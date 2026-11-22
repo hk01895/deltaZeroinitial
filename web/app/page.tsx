@@ -79,7 +79,11 @@ export default function Overview() {
     load();
     getEval().then(setEv).catch(() => setEv(null));
     window.addEventListener("dz:refresh", load);
-    return () => window.removeEventListener("dz:refresh", load);
+    const t = setInterval(load, 5000); // live: Δ updates by itself after a push is re-checked
+    return () => {
+      window.removeEventListener("dz:refresh", load);
+      clearInterval(t);
+    };
   }, [load]);
 
   const counts = useMemo(() => {
@@ -164,7 +168,7 @@ export default function Overview() {
           }`}
         />
         <p className={`${eyebrow} relative`}>
-          {cov.project} · <span className="font-mono normal-case tracking-normal text-slate-500">{cov.spec_name}</span>
+          {cov.project}
         </p>
         {proj && proj.status !== "ready" && proj.status !== "error" && (
           <p className="relative mt-2 text-xs text-cyan-200">

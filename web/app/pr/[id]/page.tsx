@@ -31,8 +31,14 @@ export default function PRReviewPage() {
   useEffect(() => {
     load();
     window.addEventListener("dz:refresh", load);
-    return () => window.removeEventListener("dz:refresh", load);
-  }, [load]);
+    // Live: pick up re-checks after a new push (the backend watches open PRs).
+    const quiet = () => getPRReview(prId, sector).then(setReview).catch(() => {});
+    const t = setInterval(quiet, 5000);
+    return () => {
+      window.removeEventListener("dz:refresh", load);
+      clearInterval(t);
+    };
+  }, [load, prId, sector]);
 
   const rerun = async () => {
     setRunning(true);
