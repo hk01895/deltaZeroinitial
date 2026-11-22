@@ -347,14 +347,6 @@ def match_requirements(requirements, issues) -> dict:
     Return ONLY valid JSON:
     {{"matches": {{"REQ-001": {{"ticket": "#12", "quote": "exact line copied from ticket #12"}}, "REQ-002": null}}}}
     """
-    m = {}
-    for model, thinking in ((LIGHTNING, False), (SUPER, True)):  # fast first; the quote check keeps it strict
-        try:
-            data = parse_json(nemotron(prompt, model, thinking=thinking))
-            m = data.get("matches", {}) if isinstance(data, dict) else {}
-            break
-        except Exception:
-            continue
     text_of = {i["key"]: _norm(f"{i['title']}\n{i.get('body') or ''}") for i in issues}
 
     # Words that set a requirement apart from the others ("reschedule", "audit"), not shared ones
@@ -369,17 +361,38 @@ def match_requirements(requirements, issues) -> dict:
     for ss in req_stems.values():
         for w in ss:
             df[w] = df.get(w, 0) + 1
-    out = {}
-    for r in requirements:
-        v = m.get(r["req_id"])
-        key, quote = (v.get("ticket"), v.get("quote")) if isinstance(v, dict) else (v, None)
-        q = _norm(quote or "")
-        ok = key in text_of and len(q.split()) >= 2 and q in text_of[key]
-        own = {w for w in req_stems[r["req_id"]] if df[w] == 1}
-        if ok and own and not (own & stems(q)):
-            ok = False  # the quote is about something related, not this requirement
-        out[r["req_id"]] = key if ok else None
-    return out
+    def checked(m):
+        out = {}
+        for r in requirements:
+            v = m.get(r["req_id"])
+            key, quote = (v.get("ticket"), v.get("quote")) if isinstance(v, dict) else (v, None)
+            q = _norm(quote or "")
+            words = q.split()
+            ticket = text_of.get(key, "")
+            ticket_words = set(ticket.split())
+            # the quote must really come from that ticket (exact, or nearly all of its words)
+            ok = bool(ticket) and len(words) >= 2 and (
+                q in ticket or sum(w in ticket_words for w in words) >= 0.85 * len(words))
+            own = {w for w in req_stems[r["req_id"]] if df[w] == 1}
+            if ok and own and not (own & stems(q)):
+                ok = False  # the quote is about something related, not this requirement
+            out[r["req_id"]] = key if ok else None
+        return out
+
+    # Lightning first for speed; if it finds nothing that passes the check, ask Super (thinking on).
+    best = {r["req_id"]: None for r in requirements}
+    for model, thinking in ((LIGHTNING, False), (SUPER, True)):
+        try:
+            data = parse_json(nemotron(prompt, model, thinking=thinking))
+            m = data.get("matches", {}) if isinstance(data, dict) else {}
+        except Exception:
+            continue
+        out = checked(m)
+        if sum(v is not None for v in out.values()) > sum(v is not None for v in best.values()):
+            best = out
+        if any(out.values()):
+            break
+    return best
 
 
 # ---------------------------------------------------------------------------
