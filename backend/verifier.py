@@ -75,8 +75,7 @@ def verify(pr_id, head_sha, diff, requirements):
     sector_rules = rulepacks.format_for_prompt(sector) if (rulepacks and sector) else ""
     feedback = _feedback(requirements)
 
-    verdicts = []
-    for r in requirements:
+    def check(r):
         high = bool(HIGH_STAKES.search(r["text"])) or bool(sector_rules and rulepacks.triggered_rules(sector, r["text"]))
         try:
             review = engine.timed_router(r["req_id"], r["text"], diff, high_stakes=high,
@@ -85,7 +84,7 @@ def verify(pr_id, head_sha, diff, requirements):
             review = {"req_id": r["req_id"], "verdict": "HUMAN_REVIEW", "confidence": 0.0, "evidence_lines": [],
                       "reasoning": f"AI check failed ({e}); a person needs to look.", "suggested_diff": "",
                       "suggested_test": "", "model_used": "lightning", "thinking": False, "latency_ms": 0}
-        verdicts.append({
+        return {
             "req_id": r["req_id"],
             "verdict": TO_BACKEND.get(review["verdict"], "human"),
             "confidence": review.get("confidence", 0.0),
@@ -100,7 +99,12 @@ def verify(pr_id, head_sha, diff, requirements):
             "downgraded_from": TO_BACKEND.get(review.get("downgraded_from") or "", None),
             "evidence_locations": locate(diff, review.get("evidence_lines", [])),
             "claimed_evidence": review.get("evidence_lines", []),
-        })
+        }
+
+    # Check every requirement at the same time (Nemotron calls run in parallel), keep the order.
+    from concurrent.futures import ThreadPoolExecutor
+    with ThreadPoolExecutor(max_workers=min(8, max(1, len(requirements)))) as pool:
+        verdicts = list(pool.map(check, requirements))
     try:  # keep reasoning + evidence locations for the dashboard (/ui/*)
         import ui_api
 
